@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otangular-dev-deployment
+  namespace: dev
+  labels:
+    app: otangular-dev
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: otangular-dev
+  template:
+    metadata:
+      labels:
+        app: otangular-dev
+    spec:
+      securityContext:
+        runAsNonRoot: false
+      imagePullSecrets:
+        - name: my-registry-key1
+      initContainers:
+      - name: disable-tcp-timestamps
+        image: busybox
+        command: ["sysctl", "-w", "net.ipv4.tcp_timestamps=0"]
+        securityContext:
+          privileged: true
+      containers:
+        - name: ot-angular-dev
+          image: newcloudnetworks/dev-angular:ot-latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          securityContext:
+            capabilities:
+              drop:
+                - "ALL"
+              add:
+                - NET_ADMIN  # Add the NET_ADMIN capability
+                - CHOWN      # Add the CHOWN capability
+                - FOWNER
+                - DAC_OVERRIDE
+                - DAC_READ_SEARCH
+                - SETGID
+                - SETUID
+                - SYS_CHROOT
+                - SYS_NICE
+                - SYS_RESOURCE
+                - NET_BIND_SERVICE
+                - KILL
+            allowPrivilegeEscalation: false
+          resources:
+            limits:
+              cpu: "1" # You can adjust this value based on your requirements
+              memory: "1Gi" # You can adjust this value based on your requirements
+            requests:
+              cpu: "0.1" # You can adjust this value based on your requirements
+              memory: "256Mi"
+      #nodeSelector:
+      #  systemtype: devenv

@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+ name: otangular-dev-svc
+ namespace: dev
+ labels:
+   app: otangular-dev
+spec:
+ type: NodePort
+ ports:
+ - name: http
+   protocol: TCP
+   port: 80
+   targetPort: 80
+   nodePort: 31080
+ selector:
+   app: otangular-dev

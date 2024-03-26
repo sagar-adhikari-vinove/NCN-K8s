@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: otangular-dev-svc-lb
+  namespace: dev
+  labels:
+    app: otangular-dev
+spec:
+  type: LoadBalancer  # Change this from NodePort to LoadBalancer
+ # loadBalancerIP: 216.71.167.152
+  ports:
+  - name: http
+    protocol: TCP
+    port: 80
+    targetPort: 80
+  selector:
+    app: otangular-dev
