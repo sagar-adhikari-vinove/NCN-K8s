@@ -1,0 +1,21 @@
+kind: Pod
+apiVersion: v1
+metadata:
+  name: nfs-direct
+  namespace: dev
+spec:
+  containers:
+  - name: busybox
+    image: busybox
+    command:
+    - touch /demo/data/demo.txt
+    - sleep
+    - "3600"
+    volumeMounts:
+    - name: data
+      mountPath: /demo/data
+  volumes:
+  - name: data
+    nfs:
+      server: "nfs-service.dev.svc.cluster.local"
+      path: "/nfs-direct" # "nfs-direct" folder must exist inside "/exports" directory of NFS server

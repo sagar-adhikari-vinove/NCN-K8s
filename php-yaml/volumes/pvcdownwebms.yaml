@@ -1,0 +1,13 @@
+
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: webms-download-dev
+  namespace: dev
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: webms-download-dev
+  resources:
+    requests:
+      storage: 1Gi

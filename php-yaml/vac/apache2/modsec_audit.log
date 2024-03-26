@@ -1,0 +1,351 @@
+--49ac2a77-A--
+[05/Jan/2024:10:03:55 +0000] ZZfUC8FALf@DCFFM-bwheAAAAAA 100.96.4.59 47782 100.96.1.45 80
+--49ac2a77-B--
+GET / HTTP/1.1
+Host: ot-php-vac-svc-dev
+User-Agent: curl/8.4.0
+Accept: */*
+
+--49ac2a77-F--
+HTTP/1.0 401 Unauthorized
+Cache-Control: no-cache, private
+Connection: close
+Content-Type: application/json
+
+--49ac2a77-E--
+
+--49ac2a77-H--
+Apache-Handler: application/x-httpd-php
+Stopwatch: 1704449035384340 262343 (- - -)
+Stopwatch2: 1704449035384340 262343; combined=2415, p1=1062, p2=1004, p3=72, p4=164, p5=113, sr=198, sw=0, l=0, gc=0
+Response-Body-Transformed: Dechunked
+Producer: ModSecurity for Apache/2.9.3 (http://www.modsecurity.org/); OWASP_CRS/3.2.0.
+Server: Apache/2.4.41 (Ubuntu)
+Engine-Mode: "ENABLED"
+
+--49ac2a77-Z--
+
+--1fa2b24d-A--
+[12/Jan/2024:05:12:26 +0000] ZaDKOsoDDwHwAuFBiyGnKAAAAAA 100.96.4.59 56140 100.96.1.163 80
+--1fa2b24d-B--
+GET / HTTP/1.1
+Host: ot-php-vac-svc-dev
+User-Agent: curl/8.4.0
+Accept: */*
+
+--1fa2b24d-F--
+HTTP/1.0 401 Unauthorized
+Cache-Control: no-cache, private
+Connection: close
+Content-Type: application/json
+
+--1fa2b24d-E--
+
+--1fa2b24d-H--
+Apache-Handler: application/x-httpd-php
+Stopwatch: 1705036346351288 290950 (- - -)
+Stopwatch2: 1705036346351288 290950; combined=3035, p1=1550, p2=1117, p3=74, p4=174, p5=119, sr=256, sw=1, l=0, gc=0
+Response-Body-Transformed: Dechunked
+Producer: ModSecurity for Apache/2.9.3 (http://www.modsecurity.org/); OWASP_CRS/3.2.0.
+Server: Apache/2.4.41 (Ubuntu)
+Engine-Mode: "ENABLED"
+
+--1fa2b24d-Z--
+
+--1fa2b24d-A--
+[12/Jan/2024:05:16:59 +0000] ZaDLSzUMJZsZcasWNecTIAAAAAE 100.96.4.59 59642 100.96.1.163 80
+--1fa2b24d-B--
+GET / HTTP/1.1
+Host: ot-php-vac-svc-dev
+User-Agent: curl/8.4.0
+Accept: */*
+
+--1fa2b24d-F--
+HTTP/1.0 401 Unauthorized
+Cache-Control: no-cache, private
+Connection: close
+Content-Type: application/json
+
+--1fa2b24d-E--
+
+--1fa2b24d-H--
+Apache-Handler: application/x-httpd-php
+Stopwatch: 1705036619706048 81192 (- - -)
+Stopwatch2: 1705036619706048 81192; combined=3486, p1=1630, p2=1288, p3=70, p4=318, p5=179, sr=235, sw=1, l=0, gc=0
+Response-Body-Transformed: Dechunked
+Producer: ModSecurity for Apache/2.9.3 (http://www.modsecurity.org/); OWASP_CRS/3.2.0.
+Server: Apache/2.4.41 (Ubuntu)
+Engine-Mode: "ENABLED"
+
+--1fa2b24d-Z--
+
+--2fe16809-A--
+[15/Jan/2024:05:30:46 +0000] ZaTDBliXAKNlkHCty19t0gAAAAA 100.96.4.59 55210 100.96.1.207 80
+--2fe16809-B--
+GET / HTTP/1.1
+Host: ot-php-vac-svc-dev
+User-Agent: curl/8.4.0
+Accept: */*
+
+--2fe16809-F--
+HTTP/1.0 401 Unauthorized
+Cache-Control: no-cache, private
+Connection: close
+Content-Type: application/json
+
+--2fe16809-E--
+
+--2fe16809-H--
+Apache-Handler: application/x-httpd-php
+Stopwatch: 1705296646429719 296060 (- - -)
+Stopwatch2: 1705296646429719 296060; combined=2198, p1=1081, p2=697, p3=88, p4=198, p5=134, sr=189, sw=0, l=0, gc=0
+Response-Body-Transformed: Dechunked
+Producer: ModSecurity for Apache/2.9.3 (http://www.modsecurity.org/); OWASP_CRS/3.2.0.
+Server: Apache/2.4.41 (Ubuntu)
+Engine-Mode: "ENABLED"
+
+--2fe16809-Z--
+
+--2fe16809-A--
+[15/Jan/2024:05:34:25 +0000] ZaTD4VTc1A7cZriJjJWexQAAAAE 100.96.4.59 58048 100.96.1.207 80
+--2fe16809-B--
+GET / HTTP/1.1
+Host: ot-php-vac-svc-dev
+User-Agent: curl/8.4.0
+Accept: */*
+
+--2fe16809-F--
+HTTP/1.0 401 Unauthorized
+Cache-Control: no-cache, private
+Connection: close
+Content-Type: application/json
+
+--2fe16809-E--
+
+--2fe16809-H--
+Apache-Handler: application/x-httpd-php
+Stopwatch: 1705296865433526 80510 (- - -)
+Stopwatch2: 1705296865433526 80510; combined=4116, p1=1938, p2=1459, p3=83, p4=340, p5=295, sr=484, sw=1, l=0, gc=0
+Response-Body-Transformed: Dechunked
+Producer: ModSecurity for Apache/2.9.3 (http://www.modsecurity.org/); OWASP_CRS/3.2.0.
+Server: Apache/2.4.41 (Ubuntu)
+Engine-Mode: "ENABLED"
+
+--2fe16809-Z--
+
+--55e49e55-A--
+[16/Jan/2024:07:57:10 +0000] ZaY21jB-rq4lW5gANwzEcwAAAAA 100.96.4.59 37252 100.96.1.226 80
+--55e49e55-B--
+GET / HTTP/1.1
+Host: ot-php-vac-svc-dev
+User-Agent: curl/8.4.0
+Accept: */*
+
+--55e49e55-F--
+HTTP/1.0 401 Unauthorized
+Cache-Control: no-cache, private
+Connection: close
+Content-Type: application/json
+
+--55e49e55-E--
+
+--55e49e55-H--
+Apache-Handler: application/x-httpd-php
+Stopwatch: 1705391830413513 428308 (- - -)
+Stopwatch2: 1705391830413513 428308; combined=3668, p1=1636, p2=1243, p3=241, p4=318, p5=229, sr=265, sw=1, l=0, gc=0
+Response-Body-Transformed: Dechunked
+Producer: ModSecurity for Apache/2.9.3 (http://www.modsecurity.org/); OWASP_CRS/3.2.0.
+Server: Apache
+Engine-Mode: "ENABLED"
+
+--55e49e55-Z--
+
+--55e49e55-A--
+[16/Jan/2024:07:59:24 +0000] ZaY3XG-DDVxjlmnKws@OHwAAAAI 100.96.4.59 38912 100.96.1.226 80
+--55e49e55-B--
+GET / HTTP/1.1
+Host: ot-php-vac-svc-dev
+User-Agent: curl/8.4.0
+Accept: */*
+
+--55e49e55-F--
+HTTP/1.0 401 Unauthorized
+Cache-Control: no-cache, private
+Connection: close
+Content-Type: application/json
+
+--55e49e55-E--
+
+--55e49e55-H--
+Apache-Handler: application/x-httpd-php
+Stopwatch: 1705391964858281 86080 (- - -)
+Stopwatch2: 1705391964858281 86080; combined=2775, p1=1116, p2=1287, p3=79, p4=168, p5=124, sr=130, sw=1, l=0, gc=0
+Response-Body-Transformed: Dechunked
+Producer: ModSecurity for Apache/2.9.3 (http://www.modsecurity.org/); OWASP_CRS/3.2.0.
+Server: Apache
+Engine-Mode: "ENABLED"
+
+--55e49e55-Z--
+
+--4682fa25-A--
+[16/Jan/2024:09:20:32 +0000] ZaZKYP4zoZ1fZ3OK0mHP6QAAAAA 100.96.4.59 40256 100.96.1.231 80
+--4682fa25-B--
+GET / HTTP/1.1
+Host: ot-php-vac-svc-dev
+User-Agent: curl/8.4.0
+Accept: */*
+
+--4682fa25-F--
+HTTP/1.0 401 Unauthorized
+Cache-Control: no-cache, private
+Connection: close
+Content-Type: application/json
+
+--4682fa25-E--
+
+--4682fa25-H--
+Apache-Handler: application/x-httpd-php
+Stopwatch: 1705396832582329 296009 (- - -)
+Stopwatch2: 1705396832582329 296009; combined=3476, p1=1788, p2=1168, p3=100, p4=273, p5=146, sr=233, sw=1, l=0, gc=0
+Response-Body-Transformed: Dechunked
+Producer: ModSecurity for Apache/2.9.3 (http://www.modsecurity.org/); OWASP_CRS/3.2.0.
+Server: Apache
+Engine-Mode: "ENABLED"
+
+--4682fa25-Z--
+
+--4682fa25-A--
+[16/Jan/2024:09:23:35 +0000] ZaZLFx7wepWF2Vkhd6hYdQAAAAE 100.96.4.59 42456 100.96.1.231 80
+--4682fa25-B--
+GET / HTTP/1.1
+Host: ot-php-vac-svc-dev
+User-Agent: curl/8.4.0
+Accept: */*
+
+--4682fa25-F--
+HTTP/1.0 401 Unauthorized
+Cache-Control: no-cache, private
+Connection: close
+Content-Type: application/json
+
+--4682fa25-E--
+
+--4682fa25-H--
+Apache-Handler: application/x-httpd-php
+Stopwatch: 1705397015641971 89306 (- - -)
+Stopwatch2: 1705397015641971 89306; combined=5825, p1=3225, p2=1588, p3=97, p4=330, p5=584, sr=341, sw=1, l=0, gc=0
+Response-Body-Transformed: Dechunked
+Producer: ModSecurity for Apache/2.9.3 (http://www.modsecurity.org/); OWASP_CRS/3.2.0.
+Server: Apache
+Engine-Mode: "ENABLED"
+
+--4682fa25-Z--
+
+--e458033b-A--
+[17/Jan/2024:08:17:18 +0000] ZaeNDuLkNvW18hmGHJDI7wAAAAA 100.96.4.59 46776 100.96.1.238 80
+--e458033b-B--
+GET / HTTP/1.1
+Host: ot-php-vac-svc-dev
+User-Agent: curl/8.4.0
+Accept: */*
+
+--e458033b-F--
+HTTP/1.0 401 Unauthorized
+Cache-Control: no-cache, private
+Connection: close
+Content-Type: application/json
+
+--e458033b-E--
+
+--e458033b-H--
+Apache-Handler: application/x-httpd-php
+Stopwatch: 1705479438185731 287809 (- - -)
+Stopwatch2: 1705479438185731 287809; combined=2934, p1=1516, p2=861, p3=82, p4=353, p5=122, sr=173, sw=0, l=0, gc=0
+Response-Body-Transformed: Dechunked
+Producer: ModSecurity for Apache/2.9.3 (http://www.modsecurity.org/); OWASP_CRS/3.2.0.
+Server: Apache
+Engine-Mode: "ENABLED"
+
+--e458033b-Z--
+
+--3f5d7164-A--
+[17/Jan/2024:08:56:29 +0000] ZaeWPPuI7FrhS4G3AIXuAQAAAAA 100.96.4.59 46564 100.96.1.242 80
+--3f5d7164-B--
+GET / HTTP/1.1
+Host: ot-php-vac-svc-dev
+User-Agent: curl/8.4.0
+Accept: */*
+
+--3f5d7164-F--
+HTTP/1.0 401 Unauthorized
+Cache-Control: no-cache, private
+Connection: close
+Content-Type: application/json
+
+--3f5d7164-E--
+
+--3f5d7164-H--
+Apache-Handler: application/x-httpd-php
+Stopwatch: 1705481788754567 291844 (- - -)
+Stopwatch2: 1705481788754567 291844; combined=2873, p1=1559, p2=922, p3=76, p4=186, p5=129, sr=232, sw=1, l=0, gc=0
+Response-Body-Transformed: Dechunked
+Producer: ModSecurity for Apache/2.9.3 (http://www.modsecurity.org/); OWASP_CRS/3.2.0.
+Server: Apache
+Engine-Mode: "ENABLED"
+
+--3f5d7164-Z--
+
+--d162156a-A--
+[17/Jan/2024:13:31:23 +0000] ZafWqov0Wa3yvrf6ZTMcSwAAAAA 100.96.4.59 43166 100.96.1.245 80
+--d162156a-B--
+GET / HTTP/1.1
+Host: ot-php-vac-svc-dev
+User-Agent: curl/8.4.0
+Accept: */*
+
+--d162156a-F--
+HTTP/1.0 401 Unauthorized
+Cache-Control: no-cache, private
+Connection: close
+Content-Type: application/json
+
+--d162156a-E--
+
+--d162156a-H--
+Apache-Handler: application/x-httpd-php
+Stopwatch: 1705498282833042 279113 (- - -)
+Stopwatch2: 1705498282833042 279113; combined=2561, p1=1335, p2=835, p3=78, p4=188, p5=124, sr=220, sw=1, l=0, gc=0
+Response-Body-Transformed: Dechunked
+Producer: ModSecurity for Apache/2.9.3 (http://www.modsecurity.org/); OWASP_CRS/3.2.0.
+Server: Apache
+Engine-Mode: "ENABLED"
+
+--d162156a-Z--
+
+--5d4a1631-A--
+[18/Jan/2024:08:28:47 +0000] ZajhP1AxsaJ@XHqA3g7g5AAAAAA 100.96.4.59 50462 100.96.1.250 80
+--5d4a1631-B--
+GET / HTTP/1.1
+Host: ot-php-vac-svc-dev
+User-Agent: curl/8.4.0
+Accept: */*
+
+--5d4a1631-F--
+HTTP/1.0 401 Unauthorized
+Cache-Control: no-cache, private
+Connection: close
+Content-Type: application/json
+
+--5d4a1631-E--
+
+--5d4a1631-H--
+Apache-Handler: application/x-httpd-php
+Stopwatch: 1705566527387735 292819 (- - -)
+Stopwatch2: 1705566527387735 292819; combined=3547, p1=1966, p2=1129, p3=86, p4=238, p5=128, sr=278, sw=0, l=0, gc=0
+Response-Body-Transformed: Dechunked
+Producer: ModSecurity for Apache/2.9.3 (http://www.modsecurity.org/); OWASP_CRS/3.2.0.
+Server: Apache
+Engine-Mode: "ENABLED"
+
+--5d4a1631-Z--
+

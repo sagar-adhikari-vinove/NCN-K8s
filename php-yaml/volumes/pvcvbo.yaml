@@ -1,0 +1,12 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: apachevbo-dev
+  namespace: dev
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: apachevbo-dev
+  resources:
+    requests:
+      storage: 1Gi

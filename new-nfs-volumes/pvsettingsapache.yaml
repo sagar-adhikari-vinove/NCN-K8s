@@ -1,0 +1,15 @@
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: apache-settings-dev-nfs
+  namespace: dev
+  labels:
+    app: apache-settings-dev-nfs
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteMany
+  nfs:
+    server: 100.71.96.72
+    path: "/var/log/php/apache/settings"

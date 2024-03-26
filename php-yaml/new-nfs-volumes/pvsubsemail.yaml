@@ -1,0 +1,16 @@
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: emailattachsubscription-dev0-nfs
+  namespace: dev
+  labels:
+    app: emailattachsubscription-dev0-nfs
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteMany
+  nfs:
+    server: 100.71.96.72
+    path: "/opt/media/email/attachments"
+

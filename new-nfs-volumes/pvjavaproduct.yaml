@@ -1,0 +1,16 @@
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: logfileproduct-dev-nfs
+  namespace: dev
+  labels:
+    app: logfileproduct-dev-nfs
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteMany
+  nfs:
+    server: 100.71.96.72
+    path: "/var/log/java/product"
+

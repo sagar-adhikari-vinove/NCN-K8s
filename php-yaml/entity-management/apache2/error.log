@@ -1,0 +1,107 @@
+PHP Warning:  PHP Startup: Unable to load dynamic library 'php_intl.dll' (tried: /usr/lib/php/20210902/php_intl.dll (/usr/lib/php/20210902/php_intl.dll: cannot open shared object file: No such file or directory), /usr/lib/php/20210902/php_intl.dll.so (/usr/lib/php/20210902/php_intl.dll.so: cannot open shared object file: No such file or directory)) in Unknown on line 0
+[Thu Dec 07 10:18:47.508798 2023] [mpm_prefork:notice] [pid 65] AH00163: Apache/2.4.41 (Ubuntu) configured -- resuming normal operations
+[Thu Dec 07 10:18:47.508891 2023] [core:notice] [pid 65] AH00094: Command line: '/usr/sbin/apache2'
+[Thu Dec 07 10:18:48.692734 2023] [mpm_prefork:notice] [pid 65] AH00169: caught SIGTERM, shutting down
+PHP Warning:  PHP Startup: Unable to load dynamic library 'php_intl.dll' (tried: /usr/lib/php/20210902/php_intl.dll (/usr/lib/php/20210902/php_intl.dll: cannot open shared object file: No such file or directory), /usr/lib/php/20210902/php_intl.dll.so (/usr/lib/php/20210902/php_intl.dll.so: cannot open shared object file: No such file or directory)) in Unknown on line 0
+[Thu Dec 07 10:18:49.804705 2023] [mpm_prefork:notice] [pid 107] AH00163: Apache/2.4.41 (Ubuntu) configured -- resuming normal operations
+[Thu Dec 07 10:18:49.806052 2023] [core:notice] [pid 107] AH00094: Command line: '/usr/sbin/apache2'
+PHP Warning:  PHP Startup: Unable to load dynamic library 'php_intl.dll' (tried: /usr/lib/php/20210902/php_intl.dll (/usr/lib/php/20210902/php_intl.dll: cannot open shared object file: No such file or directory), /usr/lib/php/20210902/php_intl.dll.so (/usr/lib/php/20210902/php_intl.dll.so: cannot open shared object file: No such file or directory)) in Unknown on line 0
+[Thu Dec 07 15:17:13.043741 2023] [mpm_prefork:notice] [pid 66] AH00163: Apache/2.4.41 (Ubuntu) configured -- resuming normal operations
+[Thu Dec 07 15:17:13.043805 2023] [core:notice] [pid 66] AH00094: Command line: '/usr/sbin/apache2'
+[Thu Dec 07 15:17:14.222110 2023] [mpm_prefork:notice] [pid 66] AH00169: caught SIGTERM, shutting down
+PHP Warning:  PHP Startup: Unable to load dynamic library 'php_intl.dll' (tried: /usr/lib/php/20210902/php_intl.dll (/usr/lib/php/20210902/php_intl.dll: cannot open shared object file: No such file or directory), /usr/lib/php/20210902/php_intl.dll.so (/usr/lib/php/20210902/php_intl.dll.so: cannot open shared object file: No such file or directory)) in Unknown on line 0
+[Thu Dec 07 15:17:15.304137 2023] [mpm_prefork:notice] [pid 108] AH00163: Apache/2.4.41 (Ubuntu) configured -- resuming normal operations
+[Thu Dec 07 15:17:15.304202 2023] [core:notice] [pid 108] AH00094: Command line: '/usr/sbin/apache2'
+PHP Warning:  PHP Startup: Unable to load dynamic library 'php_intl.dll' (tried: /usr/lib/php/20210902/php_intl.dll (/usr/lib/php/20210902/php_intl.dll: cannot open shared object file: No such file or directory), /usr/lib/php/20210902/php_intl.dll.so (/usr/lib/php/20210902/php_intl.dll.so: cannot open shared object file: No such file or directory)) in Unknown on line 0
+[Mon Dec 11 14:35:45.601475 2023] [mpm_prefork:notice] [pid 66] AH00163: Apache/2.4.41 (Ubuntu) configured -- resuming normal operations
+[Mon Dec 11 14:35:45.601543 2023] [core:notice] [pid 66] AH00094: Command line: '/usr/sbin/apache2'
+[Mon Dec 11 14:35:46.710924 2023] [mpm_prefork:notice] [pid 66] AH00169: caught SIGTERM, shutting down
+PHP Warning:  PHP Startup: Unable to load dynamic library 'php_intl.dll' (tried: /usr/lib/php/20210902/php_intl.dll (/usr/lib/php/20210902/php_intl.dll: cannot open shared object file: No such file or directory), /usr/lib/php/20210902/php_intl.dll.so (/usr/lib/php/20210902/php_intl.dll.so: cannot open shared object file: No such file or directory)) in Unknown on line 0
+[Mon Dec 11 14:35:47.858558 2023] [mpm_prefork:notice] [pid 108] AH00163: Apache/2.4.41 (Ubuntu) configured -- resuming normal operations
+[Mon Dec 11 14:35:47.858617 2023] [core:notice] [pid 108] AH00094: Command line: '/usr/sbin/apache2'
+PHP Warning:  PHP Startup: Unable to load dynamic library 'php_intl.dll' (tried: /usr/lib/php/20210902/php_intl.dll (/usr/lib/php/20210902/php_intl.dll: cannot open shared object file: No such file or directory), /usr/lib/php/20210902/php_intl.dll.so (/usr/lib/php/20210902/php_intl.dll.so: cannot open shared object file: No such file or directory)) in Unknown on line 0
+[Thu Dec 14 11:37:05.836587 2023] [mpm_prefork:notice] [pid 66] AH00163: Apache/2.4.41 (Ubuntu) configured -- resuming normal operations
+[Thu Dec 14 11:37:05.836693 2023] [core:notice] [pid 66] AH00094: Command line: '/usr/sbin/apache2'
+[Thu Dec 14 11:37:07.016783 2023] [mpm_prefork:notice] [pid 66] AH00169: caught SIGTERM, shutting down
+PHP Warning:  PHP Startup: Unable to load dynamic library 'php_intl.dll' (tried: /usr/lib/php/20210902/php_intl.dll (/usr/lib/php/20210902/php_intl.dll: cannot open shared object file: No such file or directory), /usr/lib/php/20210902/php_intl.dll.so (/usr/lib/php/20210902/php_intl.dll.so: cannot open shared object file: No such file or directory)) in Unknown on line 0
+[Thu Dec 14 11:37:08.111027 2023] [mpm_prefork:notice] [pid 108] AH00163: Apache/2.4.41 (Ubuntu) configured -- resuming normal operations
+[Thu Dec 14 11:37:08.111122 2023] [core:notice] [pid 108] AH00094: Command line: '/usr/sbin/apache2'
+PHP Warning:  PHP Startup: Unable to load dynamic library 'php_intl.dll' (tried: /usr/lib/php/20210902/php_intl.dll (/usr/lib/php/20210902/php_intl.dll: cannot open shared object file: No such file or directory), /usr/lib/php/20210902/php_intl.dll.so (/usr/lib/php/20210902/php_intl.dll.so: cannot open shared object file: No such file or directory)) in Unknown on line 0
+[Fri Dec 15 08:43:38.232385 2023] [mpm_prefork:notice] [pid 66] AH00163: Apache/2.4.41 (Ubuntu) configured -- resuming normal operations
+[Fri Dec 15 08:43:38.232464 2023] [core:notice] [pid 66] AH00094: Command line: '/usr/sbin/apache2'
+[Fri Dec 15 08:43:39.408464 2023] [mpm_prefork:notice] [pid 66] AH00169: caught SIGTERM, shutting down
+PHP Warning:  PHP Startup: Unable to load dynamic library 'php_intl.dll' (tried: /usr/lib/php/20210902/php_intl.dll (/usr/lib/php/20210902/php_intl.dll: cannot open shared object file: No such file or directory), /usr/lib/php/20210902/php_intl.dll.so (/usr/lib/php/20210902/php_intl.dll.so: cannot open shared object file: No such file or directory)) in Unknown on line 0
+[Fri Dec 15 08:43:40.497608 2023] [mpm_prefork:notice] [pid 108] AH00163: Apache/2.4.41 (Ubuntu) configured -- resuming normal operations
+[Fri Dec 15 08:43:40.497671 2023] [core:notice] [pid 108] AH00094: Command line: '/usr/sbin/apache2'
+PHP Warning:  PHP Startup: Unable to load dynamic library 'php_intl.dll' (tried: /usr/lib/php/20210902/php_intl.dll (/usr/lib/php/20210902/php_intl.dll: cannot open shared object file: No such file or directory), /usr/lib/php/20210902/php_intl.dll.so (/usr/lib/php/20210902/php_intl.dll.so: cannot open shared object file: No such file or directory)) in Unknown on line 0
+[Thu Dec 21 10:02:55.148302 2023] [mpm_prefork:notice] [pid 66] AH00163: Apache/2.4.41 (Ubuntu) configured -- resuming normal operations
+[Thu Dec 21 10:02:55.149033 2023] [core:notice] [pid 66] AH00094: Command line: '/usr/sbin/apache2'
+[Thu Dec 21 10:02:56.318596 2023] [mpm_prefork:notice] [pid 66] AH00169: caught SIGTERM, shutting down
+PHP Warning:  PHP Startup: Unable to load dynamic library 'php_intl.dll' (tried: /usr/lib/php/20210902/php_intl.dll (/usr/lib/php/20210902/php_intl.dll: cannot open shared object file: No such file or directory), /usr/lib/php/20210902/php_intl.dll.so (/usr/lib/php/20210902/php_intl.dll.so: cannot open shared object file: No such file or directory)) in Unknown on line 0
+[Thu Dec 21 10:02:57.417964 2023] [mpm_prefork:notice] [pid 108] AH00163: Apache/2.4.41 (Ubuntu) configured -- resuming normal operations
+[Thu Dec 21 10:02:57.418038 2023] [core:notice] [pid 108] AH00094: Command line: '/usr/sbin/apache2'
+PHP Warning:  PHP Startup: Unable to load dynamic library 'php_intl.dll' (tried: /usr/lib/php/20210902/php_intl.dll (/usr/lib/php/20210902/php_intl.dll: cannot open shared object file: No such file or directory), /usr/lib/php/20210902/php_intl.dll.so (/usr/lib/php/20210902/php_intl.dll.so: cannot open shared object file: No such file or directory)) in Unknown on line 0
+[Thu Dec 21 10:05:34.027925 2023] [mpm_prefork:notice] [pid 65] AH00163: Apache/2.4.41 (Ubuntu) configured -- resuming normal operations
+[Thu Dec 21 10:05:34.028036 2023] [core:notice] [pid 65] AH00094: Command line: '/usr/sbin/apache2'
+[Thu Dec 21 10:05:35.214986 2023] [mpm_prefork:notice] [pid 65] AH00169: caught SIGTERM, shutting down
+PHP Warning:  PHP Startup: Unable to load dynamic library 'php_intl.dll' (tried: /usr/lib/php/20210902/php_intl.dll (/usr/lib/php/20210902/php_intl.dll: cannot open shared object file: No such file or directory), /usr/lib/php/20210902/php_intl.dll.so (/usr/lib/php/20210902/php_intl.dll.so: cannot open shared object file: No such file or directory)) in Unknown on line 0
+[Thu Dec 21 10:05:36.307397 2023] [mpm_prefork:notice] [pid 107] AH00163: Apache/2.4.41 (Ubuntu) configured -- resuming normal operations
+[Thu Dec 21 10:05:36.307457 2023] [core:notice] [pid 107] AH00094: Command line: '/usr/sbin/apache2'
+PHP Warning:  PHP Startup: Unable to load dynamic library 'php_intl.dll' (tried: /usr/lib/php/20210902/php_intl.dll (/usr/lib/php/20210902/php_intl.dll: cannot open shared object file: No such file or directory), /usr/lib/php/20210902/php_intl.dll.so (/usr/lib/php/20210902/php_intl.dll.so: cannot open shared object file: No such file or directory)) in Unknown on line 0
+[Thu Dec 21 10:46:55.957144 2023] [mpm_prefork:notice] [pid 66] AH00163: Apache/2.4.41 (Ubuntu) configured -- resuming normal operations
+[Thu Dec 21 10:46:55.957237 2023] [core:notice] [pid 66] AH00094: Command line: '/usr/sbin/apache2'
+[Thu Dec 21 10:46:57.136561 2023] [mpm_prefork:notice] [pid 66] AH00169: caught SIGTERM, shutting down
+PHP Warning:  PHP Startup: Unable to load dynamic library 'php_intl.dll' (tried: /usr/lib/php/20210902/php_intl.dll (/usr/lib/php/20210902/php_intl.dll: cannot open shared object file: No such file or directory), /usr/lib/php/20210902/php_intl.dll.so (/usr/lib/php/20210902/php_intl.dll.so: cannot open shared object file: No such file or directory)) in Unknown on line 0
+[Thu Dec 21 10:46:58.235477 2023] [mpm_prefork:notice] [pid 108] AH00163: Apache/2.4.41 (Ubuntu) configured -- resuming normal operations
+[Thu Dec 21 10:46:58.235551 2023] [core:notice] [pid 108] AH00094: Command line: '/usr/sbin/apache2'
+PHP Warning:  PHP Startup: Unable to load dynamic library 'php_intl.dll' (tried: /usr/lib/php/20210902/php_intl.dll (/usr/lib/php/20210902/php_intl.dll: cannot open shared object file: No such file or directory), /usr/lib/php/20210902/php_intl.dll.so (/usr/lib/php/20210902/php_intl.dll.so: cannot open shared object file: No such file or directory)) in Unknown on line 0
+[Thu Dec 21 12:01:07.066256 2023] [mpm_prefork:notice] [pid 65] AH00163: Apache/2.4.41 (Ubuntu) configured -- resuming normal operations
+[Thu Dec 21 12:01:07.067528 2023] [core:notice] [pid 65] AH00094: Command line: '/usr/sbin/apache2'
+[Thu Dec 21 12:01:08.248605 2023] [mpm_prefork:notice] [pid 65] AH00169: caught SIGTERM, shutting down
+PHP Warning:  PHP Startup: Unable to load dynamic library 'php_intl.dll' (tried: /usr/lib/php/20210902/php_intl.dll (/usr/lib/php/20210902/php_intl.dll: cannot open shared object file: No such file or directory), /usr/lib/php/20210902/php_intl.dll.so (/usr/lib/php/20210902/php_intl.dll.so: cannot open shared object file: No such file or directory)) in Unknown on line 0
+[Thu Dec 21 12:01:09.335322 2023] [mpm_prefork:notice] [pid 107] AH00163: Apache/2.4.41 (Ubuntu) configured -- resuming normal operations
+[Thu Dec 21 12:01:09.335385 2023] [core:notice] [pid 107] AH00094: Command line: '/usr/sbin/apache2'
+PHP Warning:  PHP Startup: Unable to load dynamic library 'php_intl.dll' (tried: /usr/lib/php/20210902/php_intl.dll (/usr/lib/php/20210902/php_intl.dll: cannot open shared object file: No such file or directory), /usr/lib/php/20210902/php_intl.dll.so (/usr/lib/php/20210902/php_intl.dll.so: cannot open shared object file: No such file or directory)) in Unknown on line 0
+[Thu Dec 21 12:32:57.540195 2023] [mpm_prefork:notice] [pid 66] AH00163: Apache/2.4.41 (Ubuntu) configured -- resuming normal operations
+[Thu Dec 21 12:32:57.540274 2023] [core:notice] [pid 66] AH00094: Command line: '/usr/sbin/apache2'
+[Thu Dec 21 12:32:58.725641 2023] [mpm_prefork:notice] [pid 66] AH00169: caught SIGTERM, shutting down
+PHP Warning:  PHP Startup: Unable to load dynamic library 'php_intl.dll' (tried: /usr/lib/php/20210902/php_intl.dll (/usr/lib/php/20210902/php_intl.dll: cannot open shared object file: No such file or directory), /usr/lib/php/20210902/php_intl.dll.so (/usr/lib/php/20210902/php_intl.dll.so: cannot open shared object file: No such file or directory)) in Unknown on line 0
+[Thu Dec 21 12:32:59.814964 2023] [mpm_prefork:notice] [pid 108] AH00163: Apache/2.4.41 (Ubuntu) configured -- resuming normal operations
+[Thu Dec 21 12:32:59.815103 2023] [core:notice] [pid 108] AH00094: Command line: '/usr/sbin/apache2'
+PHP Warning:  PHP Startup: Unable to load dynamic library 'php_intl.dll' (tried: /usr/lib/php/20210902/php_intl.dll (/usr/lib/php/20210902/php_intl.dll: cannot open shared object file: No such file or directory), /usr/lib/php/20210902/php_intl.dll.so (/usr/lib/php/20210902/php_intl.dll.so: cannot open shared object file: No such file or directory)) in Unknown on line 0
+[Wed Jan 03 08:42:46.400220 2024] [mpm_prefork:notice] [pid 67] AH00163: Apache/2.4.41 (Ubuntu) configured -- resuming normal operations
+[Wed Jan 03 08:42:46.400761 2024] [core:notice] [pid 67] AH00094: Command line: '/usr/sbin/apache2'
+[Wed Jan 03 08:42:47.573856 2024] [mpm_prefork:notice] [pid 67] AH00169: caught SIGTERM, shutting down
+PHP Warning:  PHP Startup: Unable to load dynamic library 'php_intl.dll' (tried: /usr/lib/php/20210902/php_intl.dll (/usr/lib/php/20210902/php_intl.dll: cannot open shared object file: No such file or directory), /usr/lib/php/20210902/php_intl.dll.so (/usr/lib/php/20210902/php_intl.dll.so: cannot open shared object file: No such file or directory)) in Unknown on line 0
+[Wed Jan 03 08:42:48.664865 2024] [mpm_prefork:notice] [pid 113] AH00163: Apache/2.4.41 (Ubuntu) configured -- resuming normal operations
+[Wed Jan 03 08:42:48.664946 2024] [core:notice] [pid 113] AH00094: Command line: '/usr/sbin/apache2'
+PHP Warning:  PHP Startup: Unable to load dynamic library 'php_intl.dll' (tried: /usr/lib/php/20210902/php_intl.dll (/usr/lib/php/20210902/php_intl.dll: cannot open shared object file: No such file or directory), /usr/lib/php/20210902/php_intl.dll.so (/usr/lib/php/20210902/php_intl.dll.so: cannot open shared object file: No such file or directory)) in Unknown on line 0
+[Tue Jan 09 09:03:12.376842 2024] [mpm_prefork:notice] [pid 76] AH00163: Apache/2.4.41 (Ubuntu) configured -- resuming normal operations
+[Tue Jan 09 09:03:12.376948 2024] [core:notice] [pid 76] AH00094: Command line: '/usr/sbin/apache2'
+[Tue Jan 09 09:03:17.907289 2024] [mpm_prefork:notice] [pid 76] AH00169: caught SIGTERM, shutting down
+[Tue Jan 09 09:03:19.107059 2024] [:notice] [pid 223] ModSecurity for Apache/2.9.3 (http://www.modsecurity.org/) configured.
+[Tue Jan 09 09:03:19.107287 2024] [:notice] [pid 223] ModSecurity: APR compiled version="1.6.5"; loaded version="1.6.5"
+[Tue Jan 09 09:03:19.107293 2024] [:notice] [pid 223] ModSecurity: PCRE compiled version="8.39 "; loaded version="8.39 2016-06-14"
+[Tue Jan 09 09:03:19.107298 2024] [:notice] [pid 223] ModSecurity: LUA compiled version="Lua 5.1"
+[Tue Jan 09 09:03:19.107303 2024] [:notice] [pid 223] ModSecurity: YAJL compiled version="2.1.0"
+[Tue Jan 09 09:03:19.107307 2024] [:notice] [pid 223] ModSecurity: LIBXML compiled version="2.9.10"
+[Tue Jan 09 09:03:19.107371 2024] [:notice] [pid 223] ModSecurity: StatusEngine call: "2.9.3,Apache/2.4.41 (Ubuntu),1.6.5/1.6.5,8.39/8.39 2016-06-14,Lua 5.1,2.9.10,1ee8dda4e8a5292d5c5dc54d1a60acc45b1f6e2c"
+[Tue Jan 09 09:03:21.161470 2024] [:notice] [pid 223] ModSecurity: StatusEngine call failed. Query: GIXDSLRTFRAXAYLDNBSS6MROGQXDIMJA.FBKWE5LOOR2SSLBRFY3C4NJPGEXDMLRV.FQ4C4MZZF44C4MZZEAZDAMJWFUYDMLJR.GQWEY5LBEA2S4MJMGIXDSLRRGAWDCZLF.HBSGIYJUMU4GCNJSHEZGINLDGVSGGNJU.MQYWCNRQMFRWGNBVMIYWMNTFGJRQ.1704790999.status.modsecurity.org
+PHP Warning:  PHP Startup: Unable to load dynamic library 'php_intl.dll' (tried: /usr/lib/php/20210902/php_intl.dll (/usr/lib/php/20210902/php_intl.dll: cannot open shared object file: No such file or directory), /usr/lib/php/20210902/php_intl.dll.so (/usr/lib/php/20210902/php_intl.dll.so: cannot open shared object file: No such file or directory)) in Unknown on line 0
+[Tue Jan 09 09:03:21.276595 2024] [mpm_prefork:notice] [pid 226] AH00163: Apache/2.4.41 (Ubuntu) configured -- resuming normal operations
+[Tue Jan 09 09:03:21.276640 2024] [core:notice] [pid 226] AH00094: Command line: '/usr/sbin/apache2'
+PHP Warning:  PHP Startup: Unable to load dynamic library 'php_intl.dll' (tried: /usr/lib/php/20210902/php_intl.dll (/usr/lib/php/20210902/php_intl.dll: cannot open shared object file: No such file or directory), /usr/lib/php/20210902/php_intl.dll.so (/usr/lib/php/20210902/php_intl.dll.so: cannot open shared object file: No such file or directory)) in Unknown on line 0
+[Mon Jan 15 05:28:19.599418 2024] [mpm_prefork:notice] [pid 68] AH00163: Apache/2.4.41 (Ubuntu) configured -- resuming normal operations
+[Mon Jan 15 05:28:19.601149 2024] [core:notice] [pid 68] AH00094: Command line: '/usr/sbin/apache2'
+[Mon Jan 15 05:28:25.249773 2024] [mpm_prefork:notice] [pid 68] AH00169: caught SIGTERM, shutting down
+[Mon Jan 15 05:28:26.434889 2024] [:notice] [pid 216] ModSecurity for Apache/2.9.3 (http://www.modsecurity.org/) configured.
+[Mon Jan 15 05:28:26.436277 2024] [:notice] [pid 216] ModSecurity: APR compiled version="1.6.5"; loaded version="1.6.5"
+[Mon Jan 15 05:28:26.436289 2024] [:notice] [pid 216] ModSecurity: PCRE compiled version="8.39 "; loaded version="8.39 2016-06-14"
+[Mon Jan 15 05:28:26.436293 2024] [:notice] [pid 216] ModSecurity: LUA compiled version="Lua 5.1"
+[Mon Jan 15 05:28:26.436298 2024] [:notice] [pid 216] ModSecurity: YAJL compiled version="2.1.0"
+[Mon Jan 15 05:28:26.436301 2024] [:notice] [pid 216] ModSecurity: LIBXML compiled version="2.9.10"
+[Mon Jan 15 05:28:26.436357 2024] [:notice] [pid 216] ModSecurity: StatusEngine call: "2.9.3,Apache/2.4.41 (Ubuntu),1.6.5/1.6.5,8.39/8.39 2016-06-14,Lua 5.1,2.9.10,9859a46cf3bd9678bdef24b620837fc67aa3ee92"
+[Mon Jan 15 05:28:28.020160 2024] [:notice] [pid 216] ModSecurity: StatusEngine call failed. Query: GIXDSLRTFRAXAYLDNBSS6MROGQXDIMJA.FBKWE5LOOR2SSLBRFY3C4NJPGEXDMLRV.FQ4C4MZZF44C4MZZEAZDAMJWFUYDMLJR.GQWEY5LBEA2S4MJMGIXDSLRRGAWDSOBV.HFQTINTDMYZWEZBZGY3TQYTEMVTDENDC.GYZDAOBTG5TGGNRXMFQTGZLFHEZA.1705296506.status.modsecurity.org
+PHP Warning:  PHP Startup: Unable to load dynamic library 'php_intl.dll' (tried: /usr/lib/php/20210902/php_intl.dll (/usr/lib/php/20210902/php_intl.dll: cannot open shared object file: No such file or directory), /usr/lib/php/20210902/php_intl.dll.so (/usr/lib/php/20210902/php_intl.dll.so: cannot open shared object file: No such file or directory)) in Unknown on line 0
+[Mon Jan 15 05:28:28.126162 2024] [mpm_prefork:notice] [pid 219] AH00163: Apache/2.4.41 (Ubuntu) configured -- resuming normal operations
+[Mon Jan 15 05:28:28.126194 2024] [core:notice] [pid 219] AH00094: Command line: '/usr/sbin/apache2'

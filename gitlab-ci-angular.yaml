@@ -1,0 +1,752 @@
+stages:
+  - if-old-commit-dev
+  - deleting-image-dev
+  - build-dev
+  - k8s-deploy-dev
+  - build-check-dev
+  - rollback-if-build-check-failed-dev
+  - curl-script-dev
+  - curl-script-dev-rollback
+  - stable-tag-dev
+  - if-old-commit-qa
+  - deleting-image-qa
+  - build-qa
+  - k8s-deploy-qa
+  - build-check-qa
+  - rollback-if-build-check-failed-qa
+  - curl-script-qa
+  - curl-script-qa-rollback
+  - stable-tag-qa
+  - build-sonar-in1
+  - npm-audit-scan-in1
+  - if-old-commit-preprod
+  - deleting-image-preprod
+  - build-preprod
+  - k8s-deploy-preprod
+  - build-check-preprod
+  - rollback-if-build-check-failed-preprod
+  - curl-script-preprod
+  - curl-script-preprod-rollback
+  - stable-tag-preprod
+  - if-old-commit-prod
+  - build-prod
+  - k8s-deploy-prod
+  - build-check-prod
+  - rollback-if-build-check-failed-prod
+  - curl-script-prod
+  - curl-script-prod-rollback
+  - deleting-image-prod
+
+if-old-commit-dev:
+  tags:
+    - dev-tanzu-ag
+  stage: if-old-commit-dev
+  script:
+    - LAST_SHA=$(curl -s --header "PRIVATE-TOKEN:9RG6-Fw7ottfAzRYBMYY" "https://git.otava.com/api/v4/projects/271/pipelines?ref=tanzu-docker-dev&per_page=5&&sort=desc" | jq -c '.[1] | .sha' | sed -e 's/^"//' -e 's/"$//')
+    - LAST_PIPE=$(curl -s --header "PRIVATE-TOKEN:9RG6-Fw7ottfAzRYBMYY" "https://git.otava.com/api/v4/projects/271/pipelines?per_page=1&&sort=desc" | jq -c '.[0] | .id' | sed -e 's/^"//' -e 's/"$//')
+    - echo $LAST_SHA
+    - echo $LAST_PIPE
+    - > 
+      if [ "$LAST_SHA" == "$CI_COMMIT_SHA" ]; then 
+         echo "There are no changes since last run"
+         curl --request POST --header "PRIVATE-TOKEN:9RG6-Fw7ottfAzRYBMYY" "https://git.otava.com/api/v4/projects/271/pipelines/$LAST_PIPE/cancel"
+      fi
+  rules: 
+     - if: ($CI_COMMIT_BRANCH == "docker-in1-dev")
+       when: always
+
+deleting-image-dev:
+          variables:
+            GIT_STRATEGY: none
+          tags:
+           - dev-tanzu-ag
+          stage: deleting-image-dev
+          script:
+            - |-
+               cd /home/gitlab-runner/builds/docker-scripts
+               bash docker-angular-dev.sh
+          rules: 
+          - if: ($CI_COMMIT_BRANCH == "docker-in1-dev")
+            when: on_success 
+
+build-dev:
+  tags:
+    - dev-tanzu-ag
+  stage: build-dev
+  script:
+    - echo "Build docker image"
+    - destdir=../../../../ANVERSION-DEV-OT
+    - value=`cat ../../../../ANVERSION-DEV-OT`
+    - NEXTVERSION=$(echo ${value} | awk -F. -v OFS=. 'NF==1{print ++$NF}; NF>1{if(length($NF+1)>length($NF))$(NF-1)++; $NF=sprintf("%0*d", length($NF), ($NF+1)%(10^length($NF))); print}')
+    - echo "${NEXTVERSION}"
+    - echo "${NEXTVERSION}" > "$destdir"
+    - sed -i "s+buildver+$NEXTVERSION+g" package.json
+    - docker build -t newcloudnetworks/dev-angular:ot-latest -t newcloudnetworks/dev-angular:ot-$NEXTVERSION .
+    # #dockerhub cred
+    - echo "$DOCKER_PASSWORD" | docker login --username $DOCKER_USER_NAME --password-stdin
+    # # push it
+    - docker push newcloudnetworks/dev-angular:ot-latest
+    - docker push newcloudnetworks/dev-angular:ot-$NEXTVERSION
+  rules: 
+     - if: $CI_COMMIT_BRANCH == "docker-in1-dev"
+       when: always
+
+  
+
+k8s-deploy-dev:
+     variables:
+         GIT_STRATEGY: none
+     tags:
+       - dev-tanzu-ag
+     stage: k8s-deploy-dev
+     script:
+       - |-
+          cd /home/gitlab-runner/builds/angular-yaml
+          kubectl delete -f deployment.yaml
+          sleep 5s
+          kubectl apply -f deployment.yaml
+          sleep 150s
+          echo "end"
+     rules: 
+     - if: $CI_COMMIT_BRANCH == "docker-in1-dev"
+       when: on_success
+  
+build-check-dev:
+     variables:
+         GIT_STRATEGY: none
+     tags:
+       - dev-tanzu-ag
+     stage: build-check-dev
+     script: 
+       - counter=0
+       - sleep 200s
+       - >
+         while [ $counter -lt 6 ]; do
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://cpanel-dev.otava.com)
+          if [ "$response" = "200" ]; then
+            echo "Angular New build is up. Proceeding with the pipeline..."
+            echo "success"
+            exit 0  # Exit successfully
+          fi
+          sleep 60  # Wait for 1 minute before the next iteration
+          counter=$((counter + 1))
+         done
+          echo "Angular new build is not Up within the specified duration. Failing the pipeline..."
+          exit 1  # Exit with failure
+     rules: 
+     - if: $CI_COMMIT_BRANCH == "docker-in1-dev"
+       when: on_success
+
+rollback-if-build-check-failed-dev:
+     variables:
+        GIT_STRATEGY: none
+     tags:
+       - dev-tanzu-ag
+     stage: rollback-if-build-check-failed-dev
+     script:
+       - |-
+          echo "Starting Rolling back for kubernetes Deployement of Angular Build"
+          bash /home/gitlab-runner/builds/delete-deploy-angular.sh
+          cd /home/gitlab-runner/builds/angular-yaml
+          sh rollback.sh
+          echo "end Rollback stage"
+     rules: 
+     - if: $CI_COMMIT_BRANCH == "docker-in1-dev"
+       when: on_failure
+
+
+curl-script-dev:
+        variables:
+         GIT_STRATEGY: none
+        tags:
+          - dev-tanzu-ag
+        stage: curl-script-dev
+        script:
+          - |-
+             cd /home/gitlab-runner/builds
+             sh phpcurl.sh
+        rules: 
+        - if: $CI_COMMIT_BRANCH == "docker-in1-dev"
+          when: on_success      
+
+curl-script-dev-rollback:
+        variables:
+         GIT_STRATEGY: none
+        tags:
+          - dev-tanzu-ag
+        stage: curl-script-dev-rollback
+        script:
+          - |-
+             cd /home/gitlab-runner/builds
+             sh phpcurl.sh
+        rules: 
+        - if: $CI_COMMIT_BRANCH == "docker-in1-dev"
+          when: on_failure
+
+
+stable-tag-dev:
+          variables:
+            GIT_STRATEGY: none
+          tags:
+           - dev-tanzu-ag
+          stage: stable-tag-dev
+          script:
+            - |-
+               cp /home/gitlab-runner/builds/ANVERSION-DEV-OT /home/gitlab-runner/builds/ANVERSION-DEV-OT-STABLE
+          rules: 
+          - if: ($CI_COMMIT_BRANCH == "docker-in1-dev")
+            when: on_success 
+
+
+if-old-commit-qa:
+  tags:
+    - in1-qa-angular
+  stage: if-old-commit-qa
+  script:
+    - LAST_SHA=$(curl -s --header "PRIVATE-TOKEN:9RG6-Fw7ottfAzRYBMYY" "https://git.otava.com/api/v4/projects/271/pipelines?ref=docker-in1&per_page=5&&sort=desc" | jq -c '.[1] | .sha' | sed -e 's/^"//' -e 's/"$//')
+    - LAST_PIPE=$(curl -s --header "PRIVATE-TOKEN:9RG6-Fw7ottfAzRYBMYY" "https://git.otava.com/api/v4/projects/271/pipelines?per_page=1&&sort=desc" | jq -c '.[0] | .id' | sed -e 's/^"//' -e 's/"$//')
+    - echo $LAST_SHA
+    - echo $LAST_PIPE
+    - > 
+      if [ "$LAST_SHA" == "$CI_COMMIT_SHA" ]; then 
+         echo "There are no changes since last run"
+         curl --request POST --header "PRIVATE-TOKEN:9RG6-Fw7ottfAzRYBMYY" "https://git.otava.com/api/v4/projects/271/pipelines/$LAST_PIPE/cancel"
+      fi
+  rules: 
+     - if: ($CI_COMMIT_BRANCH == "docker-in1" && $CI_PIPELINE_SOURCE == "schedule")
+       when: always
+
+deleting-image-qa:
+          variables:
+            GIT_STRATEGY: none
+          tags:
+           - in1-qa-angular
+          stage: deleting-image-qa
+          script:
+            - |-
+               cp /home/gitlab-runner/builds/ANVERSION-QA-OT /home/gitlab-runner/builds/ANVERSION-QA-OT-STABLE
+               cd /home/gitlab-runner/builds/docker-scripts
+               bash docker-angular-qa.sh
+          rules: 
+          - if: ($CI_COMMIT_BRANCH == "docker-in1" && $CI_PIPELINE_SOURCE == "schedule")
+            when: on_success 
+
+build-qa:
+  tags:
+    - in1-qa-angular
+  stage: build-qa
+  script:
+    - echo "Build docker image"
+    - destdir=../../../../ANVERSION-QA-OT
+    - value=`cat ../../../../ANVERSION-QA-OT`
+    - NEXTVERSION=$(echo ${value} | awk -F. -v OFS=. 'NF==1{print ++$NF}; NF>1{if(length($NF+1)>length($NF))$(NF-1)++; $NF=sprintf("%0*d", length($NF), ($NF+1)%(10^length($NF))); print}')
+    - echo "${NEXTVERSION}"
+    - echo "${NEXTVERSION}" > "$destdir"
+    - sed -i "s+buildver+$NEXTVERSION+g" package.json
+    - docker build -t newcloudnetworks/ot-angular:ot-latest -t newcloudnetworks/ot-angular:ot-$NEXTVERSION .
+    # #dockerhub cred
+    - echo "$DOCKER_PASSWORD" | docker login --username $DOCKER_USER_NAME --password-stdin
+    # # push it
+    - docker push newcloudnetworks/ot-angular:ot-latest
+    - docker push newcloudnetworks/ot-angular:ot-$NEXTVERSION
+  rules: 
+     - if: ($CI_COMMIT_BRANCH == "docker-in1" && $CI_PIPELINE_SOURCE == "schedule")
+       when: always
+
+  
+
+k8s-deploy-qa:
+     variables:
+         GIT_STRATEGY: none
+     tags:
+       - in1-qa-angular
+     stage: k8s-deploy-qa
+     script:
+       - |-
+          cd /home/gitlab-runner/builds/angular-yaml
+          kubectl delete -f deployment.yaml
+          sleep 5s
+          kubectl apply -f deployment.yaml
+          sleep 120s
+          echo "end"
+     rules: 
+     - if: ($CI_COMMIT_BRANCH == "docker-in1" && $CI_PIPELINE_SOURCE == "schedule")
+       when: on_success
+
+
+build-check-qa:
+     variables:
+         GIT_STRATEGY: none
+     tags:
+       - in1-qa-angular
+     stage: build-check-qa
+     script: 
+       - counter=0
+       - sleep 200s
+       - >
+         while [ $counter -lt 6 ]; do
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://cpanel.otava.com)
+          if [ "$response" = "200" ]; then
+            echo "Angular New build is up. Proceeding with the pipeline..."
+            echo "success"
+            exit 0  # Exit successfully
+          fi
+          sleep 60  # Wait for 1 minute before the next iteration
+          counter=$((counter + 1))
+         done
+          echo "Angular new build is not Up within the specified duration. Failing the pipeline..."
+          exit 1  # Exit with failure
+
+     rules: 
+     - if: ($CI_COMMIT_BRANCH == "docker-in1" && $CI_PIPELINE_SOURCE == "schedule")
+       when: on_success
+
+rollback-if-build-check-failed-qa:
+     variables:
+        GIT_STRATEGY: none
+     tags:
+       - in1-qa-angular
+     stage: rollback-if-build-check-failed-qa
+     script:
+       - |-
+          echo "Starting Rolling back for kubernetes Deployement of Angular Build"
+          bash /home/gitlab-runner/builds/delete-deploy-angular.sh
+          cd /home/devops/angular-yaml
+          sh rollback.sh
+          echo "end Rollback stage"
+     rules: 
+     - if: ($CI_COMMIT_BRANCH == "docker-in1" && $CI_PIPELINE_SOURCE == "schedule")
+       when: on_failure
+
+
+curl-script-qa:
+        variables:
+         GIT_STRATEGY: none
+        tags:
+          - in1-qa-angular
+        stage: curl-script-qa
+        script:
+          - |-
+             cd /home/gitlab-runner/builds
+             sh phpcurl.sh
+        rules: 
+        - if: ($CI_COMMIT_BRANCH == "docker-in1" && $CI_PIPELINE_SOURCE == "schedule")
+          when: on_success      
+
+curl-script-qa-rollback:
+        variables:
+         GIT_STRATEGY: none
+        tags:
+          - in1-qa-angular
+        stage: curl-script-qa-rollback
+        script:
+          - |-
+             cd /home/gitlab-runner/builds
+             sh phpcurl.sh
+        rules: 
+        - if: ($CI_COMMIT_BRANCH == "docker-in1" && $CI_PIPELINE_SOURCE == "schedule")
+          when: on_failure
+
+stable-tag-qa:
+          variables:
+            GIT_STRATEGY: none
+          tags:
+           - in1-qa-angular
+          stage: stable-tag-qa
+          script:
+            - |-
+               cp /home/gitlab-runner/builds/ANVERSION-QA-OT /home/gitlab-runner/builds/ANVERSION-QA-OT-STABLE
+          rules: 
+          - if: ($CI_COMMIT_BRANCH == "docker-in1" && $CI_PIPELINE_SOURCE == "schedule")
+            when: on_success 
+
+build-sonar-in1:
+  tags:
+    - in1-qa-angular
+  stage: build-sonar-in1
+  image: 
+    name: sonarsource/sonar-scanner-cli:latest
+    entrypoint: [""]
+  variables:
+    SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"  # Defines the location of the analysis task cache
+    GIT_DEPTH: "0"  # Tells git to fetch all the branches of the project, required by the analysis task
+  cache:
+    key: "${CI_JOB_NAME}"
+    paths:
+      - .sonar/cache
+  script: 
+    - sonar-scanner
+  allow_failure: true
+  rules: 
+     - if: ($CI_COMMIT_BRANCH == "docker-in1-preprod" && $CI_PIPELINE_SOURCE == "schedule")
+       when: always
+
+npm-audit-scan-in1:
+  tags:
+    - ag-in1-preprod
+  stage: npm-audit-scan-in1
+  script:
+    - |-
+       destdir_pack=../../../../AN-PREPROD-OT
+       NEWVERSION=`cat ../../../../AN-PREPROD-OT`
+       echo "${NEWVERSION}"
+       sed -i "s+buildver+$NEWVERSION+g" package.json
+       npm i
+       cp /home/gitlab-runner/builds/angular-scan.sh . 
+       sh angular-scan.sh   
+  rules: 
+     - if: ($CI_COMMIT_BRANCH == "docker-in1-preprod" && $CI_PIPELINE_SOURCE == "schedule" && $STAGE == "npm-scan-in1")
+       when: always
+
+if-old-commit-preprod:
+  tags:
+    - ag-in1-preprod
+  stage: if-old-commit-preprod
+  script:
+    - LAST_SHA=$(curl -s --header "PRIVATE-TOKEN:9RG6-Fw7ottfAzRYBMYY" "https://git.otava.com/api/v4/projects/271/pipelines?ref=docker-in1-preprod&per_page=5&&sort=desc" | jq -c '.[1] | .sha' | sed -e 's/^"//' -e 's/"$//')
+    - LAST_PIPE=$(curl -s --header "PRIVATE-TOKEN:9RG6-Fw7ottfAzRYBMYY" "https://git.otava.com/api/v4/projects/271/pipelines?per_page=1&&sort=desc" | jq -c '.[0] | .id' | sed -e 's/^"//' -e 's/"$//')
+    - echo $LAST_SHA
+    - echo $LAST_PIPE
+    - > 
+      if [ "$LAST_SHA" == "$CI_COMMIT_SHA" ]; then 
+         echo "There are no changes since last run"
+         curl --request POST --header "PRIVATE-TOKEN:9RG6-Fw7ottfAzRYBMYY" "https://git.otava.com/api/v4/projects/271/pipelines/$LAST_PIPE/cancel"
+      fi
+  rules: 
+     - if: ($CI_COMMIT_BRANCH == "docker-in1-preprod")
+       when: always
+
+deleting-image-preprod:
+          variables:
+            GIT_STRATEGY: none
+          tags:
+           - ag-in1-preprod
+          stage: deleting-image-preprod
+          script:
+            - |-
+               cd /home/gitlab-runner/builds/docker-scripts
+               bash docker-angular-preprod.sh
+          rules: 
+          - if: ($CI_COMMIT_BRANCH == "docker-in1-preprod")
+            when: on_success 
+
+
+build-preprod:
+  tags:
+    - ag-in1-preprod
+  stage: build-preprod
+  script:
+    - |-
+       echo "Build docker image"
+       sed -i 's+dev.build.js+sb.build.js+g' Dockerfile
+       sed -i 's+qa.build.js+sb.build.js+g' Dockerfile
+       sed -i 's+cpaneldev+sb+g' Dockerfile
+       sed -i 's+qa+sb+g' Dockerfile
+       
+       destdir=../../../../AN-PREPROD-OT
+       value=`cat ../../../../AN-PREPROD-OT`
+       NEXTVERSION=$(echo ${value} | awk -F. -v OFS=. 'NF==1{print ++$NF}; NF>1{if(length($NF+1)>length($NF))$(NF-1)++; $NF=sprintf("%0*d", length($NF), ($NF+1)%(10^length($NF))); print}')
+       echo "${NEXTVERSION}"
+       echo "${NEXTVERSION}" > "$destdir"
+       
+       destdir_pack=../../../../AN-PREPROD-OT
+       value_pack=`cat ../../../../AN-PREPROD-OT`
+       NEWVERSION=$(echo ${value_pack} | awk -F. -v OFS=. 'NF==1{print ++$NF}; NF>1{if(length($NF+1)>length($NF))$(NF-1)++; $NF=sprintf("%0*d", length($NF), ($NF+1)%(10^length($NF))); print}')
+       echo "${NEWVERSION}"
+       echo "${NEWVERSION}" > "$destdir_pack"
+       
+       
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=preprod-angular:ot-latest
+       sed -i "s+buildver+$NEWVERSION+g"  package.json
+       docker build -t newcloudnetworks/preprod-angular:ot-latest .
+       docker tag newcloudnetworks/preprod-angular:ot-latest newcloudnetworks/preprod-angular:ot-$NEXTVERSION
+       #dockerhub cred
+       echo "$DOCKER_PASSWORD" | docker login --username $DOCKER_USER_NAME --password-stdin
+       # push it
+       docker push newcloudnetworks/preprod-angular:ot-latest
+       docker push newcloudnetworks/preprod-angular:ot-$NEXTVERSION       
+  
+  rules: 
+     - if: ($CI_COMMIT_BRANCH == "docker-in1-preprod")
+       when: always
+
+k8s-deploy-preprod:
+     variables:
+         GIT_STRATEGY: none
+     tags:
+       - ag-in1-preprod
+     stage: k8s-deploy-preprod
+     script:
+       - |-
+          cd /home/gitlab-runner/builds/angular-yaml
+          kubectl delete -f deployment.yaml
+          sleep 5s
+          kubectl apply -f deployment.yaml
+          sleep 120s
+          echo "end"
+     rules: 
+     - if: ($CI_COMMIT_BRANCH == "docker-in1-preprod")
+       when: on_success
+  
+build-check-preprod:
+     variables:
+         GIT_STRATEGY: none
+     tags:
+       - ag-in1-preprod
+     stage: build-check-preprod
+     script: 
+       - counter=0
+       - sleep 200s
+       - >
+         while [ $counter -lt 6 ]; do
+          response=$(curl -s -o /dev/null -w "%{http_code}" http://216.71.167.195)
+          if [ "$response" = "200" ]; then
+            echo "Angular New build is up. Proceeding with the pipeline..."
+            echo "success"
+            exit 0  # Exit successfully
+          fi
+          sleep 60  # Wait for 1 minute before the next iteration
+          counter=$((counter + 1))
+         done
+          echo "Angular new build is not Up within the specified duration. Failing the pipeline..."
+          exit 1  # Exit with failure
+
+     rules: 
+     - if: ($CI_COMMIT_BRANCH == "docker-in1-preprod")
+       when: on_success
+
+rollback-if-build-check-failed-preprod:
+     variables:
+        GIT_STRATEGY: none
+     tags:
+       - ag-in1-preprod
+     stage: rollback-if-build-check-failed-preprod
+     script:
+       - |-
+          echo "Starting Rolling back for kubernetes Deployement of Angular Build"
+          bash /home/gitlab-runner/builds/delete-deploy-angular.sh
+          cd /home/gitlab-runner/builds/angular-yaml
+          sh rollback.sh
+          echo "end Rollback stage"
+     rules: 
+     - if: ($CI_COMMIT_BRANCH == "docker-in1-preprod")
+       when: on_failure
+
+
+curl-script-preprod:
+        variables:
+         GIT_STRATEGY: none
+        tags:
+          - ag-in1-preprod
+        stage: curl-script-preprod
+        script:
+          - |-
+             cd /home/gitlab-runner/builds
+             sh phpcurl.sh
+        rules: 
+        - if: ($CI_COMMIT_BRANCH == "docker-in1-preprod")
+          when: on_success      
+
+curl-script-preprod-rollback:
+        variables:
+         GIT_STRATEGY: none
+        tags:
+          - ag-in1-preprod
+        stage: curl-script-preprod-rollback
+        script:
+          - |-
+             cd /home/gitlab-runner/builds
+             sh phpcurl.sh
+        rules: 
+        - if: ($CI_COMMIT_BRANCH == "docker-in1-preprod")
+          when: on_failure
+
+
+stable-tag-preprod:
+          variables:
+            GIT_STRATEGY: none
+          tags:
+           - ag-in1-preprod
+          stage: stable-tag-preprod
+          script:
+            - |-
+               cp /home/gitlab-runner/builds/AN-PREPROD-OT /home/gitlab-runner/builds/AN-PREPROD-OT-STABLE
+          rules: 
+          - if: ($CI_COMMIT_BRANCH == "docker-in1-preprod")
+            when: on_success 
+
+if-old-commit-prod:
+  tags:
+    - prod-in1
+  stage: if-old-commit-prod
+  script:
+    - LAST_SHA=$(curl -s --header "PRIVATE-TOKEN:9RG6-Fw7ottfAzRYBMYY" "https://git.otava.com/api/v4/projects/271/pipelines?ref=production-in1&per_page=5&&sort=desc" | jq -c '.[1] | .sha' | sed -e 's/^"//' -e 's/"$//')
+    - LAST_PIPE=$(curl -s --header "PRIVATE-TOKEN:9RG6-Fw7ottfAzRYBMYY" "https://git.otava.com/api/v4/projects/271/pipelines?per_page=1&&sort=desc" | jq -c '.[0] | .id' | sed -e 's/^"//' -e 's/"$//')
+    - echo $LAST_SHA
+    - echo $LAST_PIPE
+    - > 
+      if [ "$LAST_SHA" == "$CI_COMMIT_SHA" ]; then 
+         echo "There are no changes since last run"
+         curl --request POST --header "PRIVATE-TOKEN:9RG6-Fw7ottfAzRYBMYY" "https://git.otava.com/api/v4/projects/271/pipelines/$LAST_PIPE/cancel"
+      fi
+  rules: 
+     - if: ($CI_COMMIT_BRANCH == "production-in1")
+       when: always
+
+build-prod:
+  tags:
+    - prod-in1
+  stage: build-prod
+  script:
+    - |-
+       echo "Build docker image"
+       sed -i 's+dev.build.js+prod.build.js+g' Dockerfile
+       sed -i 's+qa.build.js+prod.build.js+g' Dockerfile
+       sed -i '0,/sb/s//prod/' Dockerfile
+       sed -i 's/sb/production/g' Dockerfile
+       sed -i 's+cpaneldev+production+g' Dockerfile
+       sed -i 's+qa+prod+g' Dockerfile
+       cat Dockerfile
+       
+       destdir=/home/gitlab-runner/ANVERSION-PROD-OT
+       value=`cat /home/gitlab-runner/ANVERSION-PROD-OT`
+       NEXTVERSION=$(echo ${value} | awk -F. -v OFS=. '{$NF += 1 ; print}')
+       echo "${NEXTVERSION}"
+       echo "${NEXTVERSION}" > "$destdir"
+       
+       destdir_pack=/home/gitlab-runner/ANVERSION-PROD-OT
+       value_pack=`cat /home/gitlab-runner/ANVERSION-PROD-OT`
+       NEWVERSION=$(echo ${value_pack} | awk -F. -v OFS=. 'NF==1{print ++$NF}; NF>1{if(length($NF+1)>length($NF))$(NF-1)++; $NF=sprintf("%0*d", length($NF), ($NF+1)%(10^length($NF))); print}')
+       echo "${NEWVERSION}"
+       echo "${NEWVERSION}" > "$destdir_pack"
+       
+       
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=prod-angular
+       sed -i "s+buildver+$NEWVERSION+g"  package.json
+       docker build -t newcloudnetworks/prod-angular:ot-latest .
+       docker tag newcloudnetworks/prod-angular:ot-latest newcloudnetworks/prod-angular:ot-$NEXTVERSION
+       #dockerhub cred
+       echo "$DOCKER_PASSWORD" | docker login --username $DOCKER_USER_NAME --password-stdin
+       # push it
+       docker push newcloudnetworks/prod-angular:ot-latest
+       docker push newcloudnetworks/prod-angular:ot-$NEXTVERSION      
+       
+  
+  rules: 
+     - if: ($CI_COMMIT_BRANCH == "production-in1")
+       when: always
+
+k8s-deploy-prod:
+     variables:
+         GIT_STRATEGY: none
+     tags:
+       - prod-in1
+     stage: k8s-deploy-prod
+     script:
+       - |-
+          cd /home/gitlab-runner/builds/angular-yaml
+          kubectl delete -f deployment.yaml
+          sleep 5s
+          kubectl apply -f deployment.yaml
+          sleep 120s
+          echo "end"
+     rules: 
+     - if: ($CI_COMMIT_BRANCH == "production-in1")
+       when: on_success
+  
+build-check-prod:
+     variables:
+         GIT_STRATEGY: none
+     tags:
+       - prod-in1
+     stage: build-check-prod
+     script: 
+       - counter=0
+       - sleep 200s
+       - >
+         while [ $counter -lt 6 ]; do
+          response=$(curl -s -o /dev/null -w "%{http_code}" http://216.71.167.185)
+          if [ "$response" = "200" ]; then
+            echo "Angular New build is up. Proceeding with the pipeline..."
+            echo "success"
+            exit 0  # Exit successfully
+          fi
+          sleep 60  # Wait for 1 minute before the next iteration
+          counter=$((counter + 1))
+         done
+          echo "Angular new build is not Up within the specified duration. Failing the pipeline..."
+          exit 1  # Exit with failure
+
+     rules: 
+     - if: ($CI_COMMIT_BRANCH == "production-in1")
+       when: on_success
+
+rollback-if-build-check-failed-prod:
+     variables:
+        GIT_STRATEGY: none
+     tags:
+       - prod-in1
+     stage: rollback-if-build-check-failed-prod
+     script:
+       - |-
+          echo "Starting Rolling back for kubernetes Deployement of Angular Build"
+          bash /home/gitlab-runner/builds/delete-deploy-angular.sh
+          cd /home/gitlab-runner/builds/angular-yaml
+          sh rollback.sh
+          echo "end Rollback stage"
+     rules: 
+     - if: ($CI_COMMIT_BRANCH == "production-in1")
+       when: on_failure
+
+
+curl-script-prod:
+        variables:
+         GIT_STRATEGY: none
+        tags:
+          - prod-in1
+        stage: curl-script-prod
+        script:
+          - |-
+             cd /home/gitlab-runner/builds
+             sh phpcurl.sh
+        rules: 
+        - if: ($CI_COMMIT_BRANCH == "production-in1")
+          when: on_success      
+
+curl-script-prod-rollback:
+        variables:
+         GIT_STRATEGY: none
+        tags:
+          - prod-in1
+        stage: curl-script-prod-rollback
+        script:
+          - |-
+             cd /home/gitlab-runner/builds
+             sh phpcurl.sh
+        rules: 
+        - if: ($CI_COMMIT_BRANCH == "production-in1")
+          when: on_failure
+
+
+deleting-image-prod:
+          variables:
+            GIT_STRATEGY: none
+          tags:
+           - prod-in1
+          stage: deleting-image-prod
+          script:
+            - |-
+               cp /home/gitlab-runner/builds/ANVERSION-PROD-OT /home/gitlab-runner/builds/ANVERSION-PROD-OT-STABLE
+               cd /home/gitlab-runner/builds/docker-scripts
+               bash docker-angular-prod.sh
+          rules: 
+          - if: ($CI_COMMIT_BRANCH == "production-in1")
+            when: on_success 

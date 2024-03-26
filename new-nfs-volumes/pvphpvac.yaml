@@ -1,0 +1,16 @@
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: logfile-vac-dev-nfs
+  namespace: dev
+  labels:
+    app: logfile-vac-dev-nfs
+spec:
+  capacity:
+    storage: 2Gi
+  accessModes:
+    - ReadWriteMany
+  nfs:
+    server: 100.71.96.72
+    path: "/var/log/php/vac"
+

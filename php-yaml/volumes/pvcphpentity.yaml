@@ -1,0 +1,15 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: logfileentity-management-dev
+  namespace: dev
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: logfileentity-management-dev 
+  resources:
+    requests:
+      storage: 1Gi
+
+
+

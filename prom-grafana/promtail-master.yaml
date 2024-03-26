@@ -1,0 +1,151 @@
+--- # Daemonset.yaml
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: promtail-daemonset-master
+spec:
+  selector:
+    matchLabels:
+      name: promtail
+  template:
+    metadata:
+      labels:
+        name: promtail
+    spec:
+      serviceAccount: promtail-serviceaccount
+      tolerations:
+      - key: "node-role.kubernetes.io/master"
+        operator: Exists
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: "node-role.kubernetes.io/master"
+                operator: Exists
+      containers:
+      - name: promtail-container
+        image: grafana/promtail
+        args:
+        - -config.file=/etc/promtail/promtail.yaml
+        env:
+        - name: 'HOSTNAME' # needed when using kubernetes_sd_configs
+          valueFrom:
+            fieldRef:
+              fieldPath: 'spec.nodeName'
+        volumeMounts:
+        - name: logs
+          mountPath: /var/log
+        - name: promtail-config
+          mountPath: /etc/promtail
+        - name: kubernetes-policy
+          mountPath: /etc/kubernetes
+        - mountPath: /var/lib/docker/containers
+          name: varlibdockercontainers
+          readOnly: true
+        - mountPath: /var/log/java
+          name: javalogs
+          readOnly: true
+        - mountPath: /var/log/php
+          name: phplogs
+          readOnly: true
+        - mountPath: /var/log/kubernetes
+          name: auditlogs
+          readOnly: true
+      volumes:
+      - name: logs
+        hostPath:
+          path: /var/log
+      - name: kubernetes-policy
+        hostPath:
+          path: /etc/kubernetes
+      - name: varlibdockercontainers
+        hostPath:
+          path: /var/lib/docker/containers
+      - name: javalogs
+        hostPath:
+          path: /var/log/java
+      - name: phplogs
+        hostPath:
+          path: /var/log/php
+      - name: auditlogs
+        hostPath:
+          path: /var/log/kubernetes
+      - name: promtail-config
+        configMap:
+          name: promtail-config
+--- # configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: promtail-config
+data:
+  promtail.yaml: |
+    server:
+      http_listen_port: 9080
+      grpc_listen_port: 0
+
+    clients:
+    - url: http://10.20.1.101:3100/loki/api/v1/push
+
+    positions:
+      filename: /tmp/positions.yaml
+    target_config:
+      sync_period: 10s
+    scrape_configs:
+      - job_name: k8s-audit-logs-cp-1
+        static_configs:
+        - targets:
+          - 10.20.1.19
+          labels:
+            job: k8s-audit-logs-cp-1
+            __path__: /var/log/kubernetes/audit/audit.log
+      - job_name: k8s-audit-logs-cp-2
+        static_configs:
+        - targets:
+          - 10.20.1.17
+          labels:
+            job: k8s-audit-logs-cp-2
+            __path__: /var/log/kubernetes/audit/audit.log
+      - job_name: k8s-audit-logs-cp-3
+        static_configs:
+        - targets:
+          - 10.20.1.20
+          labels:
+            job: k8s-audit-logs-cp-3
+            __path__: /var/log/kubernetes/audit/audit.log
+--- # Clusterrole.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: promtail-clusterrole
+rules:
+  - apiGroups: [""]
+    resources:
+    - nodes
+    - services
+    - pods
+    verbs:
+    - get
+    - watch
+    - list
+
+--- # ServiceAccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: promtail-serviceaccount
+
+--- # Rolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: promtail-clusterrolebinding
+subjects:
+    - kind: ServiceAccount
+      name: promtail-serviceaccount
+      namespace: default
+roleRef:
+    kind: ClusterRole
+    name: promtail-clusterrole
+    apiGroup: rbac.authorization.k8s.io

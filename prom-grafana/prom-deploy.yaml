@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: promtail
+spec:
+  selector:
+    matchLabels:
+      app: promtail
+      network: cluster-1
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: promtail
+        network: cluster-1
+    spec:
+      containers:
+        - name: promtail
+          image:  grafana/promtail
+          volumeMounts:
+            - name: promtail-config-volume
+              mountPath: /mnt/config/promtail-config.yml
+              subPath: promtail.yml
+      volumes:
+        - name: promtail-config-volume
+          configMap:
+            name: "promtail-config"

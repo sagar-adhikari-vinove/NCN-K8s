@@ -1,0 +1,12 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: logfilesubscription-dev
+  namespace: dev
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: logfilesubscription-dev
+  resources:
+    requests:
+      storage: 1Gi

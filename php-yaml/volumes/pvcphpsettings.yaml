@@ -1,0 +1,15 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: logfilesettings-dev
+  namespace: dev
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: logfilesettings-dev
+  resources:
+    requests:
+      storage: 1Gi
+
+
+

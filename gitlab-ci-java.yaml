@@ -1,0 +1,2153 @@
+stages:
+  - if-old-commit-docker-dev
+  - deleting-image-dev
+  - build-dev
+  - k8s-delete-dev
+  - k8s-deploy-dev
+  - build-check-dev
+  - rollback-if-build-check-failed-dev
+  - stable-tag-dev
+  - if-old-commit-docker-qa
+  - deleting-image-qa
+  - build-qa
+  - k8s-delete-qa
+  - run-queries-docker-qa
+  - k8s-deploy-qa
+  - build-check-qa
+  - rollback-if-build-check-failed-qa
+  - stable-tag-qa
+  - build-sonar-in1
+  - maven-verify-scan-in1
+  - if-old-commit-docker-preprod
+  - deleting-image-preprod
+  - build-preprod
+  - k8s-delete-preprod
+  - run-queries-docker-preprod
+  - k8s-deploy-preprod
+  - build-check-preprod
+  - rollback-if-build-check-failed-preprod
+  - stable-tag-preprod
+  - if-old-commit-docker-prod
+  - k8s-delete-prod
+  - run-queries-docker-prod
+  - k8s-deploy-prod
+  - build-check-prod
+  - rollback-if-build-check-failed-prod
+  - deleting-image-prod
+
+
+if-old-commit-docker-dev:
+  tags:
+    - dev-tanzu-ot
+  stage: if-old-commit-docker-dev
+  script:
+    - LAST_SHA=$(curl -s --header "PRIVATE-TOKEN:9RG6-Fw7ottfAzRYBMYY" "https://git.otava.com/api/v4/projects/273/pipelines?ref=docker-in1-dev&per_page=5&&sort=desc" | jq -c '.[1] | .sha' | sed -e 's/^"//' -e 's/"$//')
+    - LAST_PIPE=$(curl -s --header "PRIVATE-TOKEN:9RG6-Fw7ottfAzRYBMYY" "https://git.otava.com/api/v4/projects/273/pipelines?per_page=1&&sort=desc" | jq -c '.[0] | .id' | sed -e 's/^"//' -e 's/"$//')
+    - echo $LAST_SHA
+    - echo $LAST_PIPE
+    - > 
+      if [ "$LAST_SHA" == "$CI_COMMIT_SHA" ]; then 
+         echo "There are no changes since last run in docker-dev"
+         curl --request POST --header "PRIVATE-TOKEN:9RG6-Fw7ottfAzRYBMYY" "https://git.otava.com/api/v4/projects/273/pipelines/$LAST_PIPE/cancel"
+      fi
+  rules: 
+     - if: ($CI_COMMIT_BRANCH == "docker-in1-dev")
+       when: always
+
+deleting-image-dev:
+          variables:
+             GIT_STRATEGY: none
+          tags:
+           - dev-tanzu-ot
+          stage: deleting-image-dev
+          script:
+            - |-
+               #scp /home/gitlab-runner/builds/JAVAVERSION-DEV-OT devops@104.37.223.143:/home/gitlab-runner/builds/JAVAVERSION-DEV-OT-STABLE
+               #cp /home/gitlab-runner/builds/JAVAVERSION-DEV-OT /home/gitlab-runner/builds/JAVAVERSION-DEV-OT-STABLE
+               cd /home/gitlab-runner/builds/docker-scripts
+               bash docker-java-dev.sh
+          rules: 
+          - if: ($CI_COMMIT_BRANCH == "docker-in1-dev")
+            when: on_success
+
+build-dev:
+  tags:
+    - dev-tanzu-ot
+  stage: build-dev
+  script:
+    - |-
+    
+       #######################################################################################################
+       ###############################Building the Java code DEV##############################################
+       #######################################################################################################
+       
+       echo "Building the Java code"
+       
+       sed -i 's+test+dev+g' service-registry/script.sh
+       sed -i 's+test+dev+g' cloud-config-server/script.sh
+       sed -i 's+DEFAULT_ENV=test+DEFAULT_ENV=dev+g' pasco-product-web/script.sh
+       sed -i 's+9199+31199+g' pasco-product-web/src/main/resources/application.properties
+
+       sed -i 's+localhost:8761+ot-service-registry-svc-dev:8761+g' pasco-product-web/src/main/resources/application.properties
+       sed -i 's+localhost:8761+ot-service-registry-svc-dev:8761+g' pasco-contact-web/src/main/resources/application.properties
+       sed -i 's+localhost:8761+ot-service-registry-svc-dev:8761+g' pasco-customer-web/src/main/resources/application.properties
+       sed -i 's+localhost:8761+ot-service-registry-svc-dev:8761+g' pasco-partner-web/src/main/resources/application.properties
+       sed -i 's+localhost:8761+ot-service-registry-svc-dev:8761+g' pasco-subscription-web/src/main/resources/application.properties
+
+       sed -i 's+localhost+ot-pasco-product-web-svc-dev+g' pasco-product-web/src/main/resources/application.properties
+       sed -i 's+localhost+ot-java-pasco-contact-web-svc-dev+g' pasco-contact-web/src/main/resources/application.properties
+       sed -i 's+localhost+ot-pasco-customer-web-svc-dev+g' pasco-customer-web/src/main/resources/application.properties
+       sed -i 's+localhost+ot-pasco-partner-web-svc-dev+g' pasco-partner-web/src/main/resources/application.properties
+       sed -i 's+localhost+ot-pasco-subscription-web-svc-dev+g' pasco-subscription-web/src/main/resources/application.properties
+       
+       sed -i 's+DEFAULT_ENV=test+DEFAULT_ENV=dev+g' pasco-contact-web/script.sh
+       sed -i 's+9196+31196+g' pasco-contact-web/src/main/resources/application.properties
+       
+       sed -i 's+DEFAULT_ENV=test+DEFAULT_ENV=dev+g' pasco-customer-web/script.sh
+       sed -i 's+9197+31197+g' pasco-customer-web/src/main/resources/application.properties
+       
+       sed -i 's+DEFAULT_ENV=test+DEFAULT_ENV=dev+g' pasco-partner-web/script.sh
+       sed -i 's+9198+31198+g' pasco-partner-web/src/main/resources/application.properties
+       
+       sed -i 's+DEFAULT_ENV=test+DEFAULT_ENV=dev+g' cloud-gateway/script.sh
+       
+       ################################################################
+       
+       sed -i 's+main+docker-dev+g' cloud-config-server/src/main/resources/application.yml
+       sed -i 's+8761+8761+g' cloud-config-server/src/main/resources/application.yml
+       sed -i 's+pchandra+devteam+g' cloud-config-server/src/main/resources/application.yml
+       sed -i 's+rq-T1V-k2yLHGDBngMxT+3dbChxwc4R3_jrTqoyFw+g' cloud-config-server/src/main/resources/application.yml
+       sed -i 's+localhost+ot-service-registry-svc-dev+g' cloud-config-server/src/main/resources/application.yml
+       sed -i 's+127.0.0.1+ot-service-registry-svc-dev+g' cloud-config-server/src/main/resources/application.yml
+       
+       sed -i 's+localhost+ot-java-config-server-svc-dev+g' cloud-gateway/src/main/resources/bootstrap.yml
+       sed -i 's+9296+9296+g' cloud-gateway/src/main/resources/bootstrap.yml
+       sed -i 's+main+docker-dev+g' cloud-gateway/src/main/resources/bootstrap.yml
+       
+       sed -i 's+localhost+ot-java-config-server-svc-dev+g' hystrix-dashboard/src/main/resources/bootstrap.yml
+       sed -i 's+9296+9296+g' hystrix-dashboard/src/main/resources/bootstrap.yml
+       sed -i 's+main+docker-dev+g' hystrix-dashboard/src/main/resources/bootstrap.yml
+       
+       sed -i 's+9199+31199+g' pasco-product-web/src/main/resources/application.properties
+       sed -i 's+test+dev+g' pasco-product-web/src/main/resources/application.properties
+       
+       sed -i 's+9196+31196+g' pasco-contact-web/src/main/resources/application.properties
+       sed -i 's+test+dev+g' pasco-contact-web/src/main/resources/application.properties
+       
+       sed -i 's+9197+31197+g' pasco-customer-web/src/main/resources/application.properties
+       sed -i 's+test+dev+g' pasco-customer-web/src/main/resources/application.properties
+       
+       sed -i 's+9198+31198+g' pasco-partner-web/src/main/resources/application.properties
+       sed -i 's+test+dev+g' pasco-partner-web/src/main/resources/application.properties
+       sed -i 's+9193+31193+g' pasco-subscription-web/src/main/resources/application.properties
+       
+       ###########################################################################
+       JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+       MAVEN_SKIP_RC=true
+       echo $JAVA_HOME
+       java -version
+       mkdir -p ~/.m2/repository/com/connectwise/manage/connectwise-sdk/2024.1
+       cp connectwise-sdk-2024.1.jar ~/.m2/repository/com/connectwise/manage/connectwise-sdk/2024.1
+       #mvn test
+       mvn clean package -Dmaven.test.skip
+
+       #######################################################################################################
+       ######################Zipkin docker image creation DEV#################################################
+       #######################################################################################################
+       
+       echo "Zipkin docker image creation DEV"
+       cd zipkin
+       
+       destdir=../../../../../JAVAVERSION-DEV-OT
+       value=`cat ../../../../../JAVAVERSION-DEV-OT`
+       NEXTVERSION=$(echo ${value} | awk -F. -v OFS=. '{$NF += 1 ; print}')
+       echo "${NEXTVERSION}"
+       echo "${NEXTVERSION}" > "$destdir"
+       echo "HAHAHAHAHAHAHAHA"
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=dev-java-zipkin
+       docker build -t newcloudnetworks/dev-java-zipkin:ot-latest -t newcloudnetworks/dev-java-zipkin:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/dev-java-zipkin:latest newcloudnetworks/dev-java-zipkin:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/dev-java-zipkin:latest newcloudnetworks/dev-java-zipkin:ot-latest
+       #dockerhub cred
+       #docker login --username=$DOCKER_USER_NAME -p=$DOCKER_PASSWORD
+       
+       #######################################################################################################
+       ##########Creating docker image for service-registry DEV###############################################
+       #######################################################################################################
+       
+       echo "Creating docker image for service-registry DEV"
+       cd ../service-registry
+       
+       sed -i 's+test+dev+g' script.sh
+       
+       destdir=../../../../../JAVAVERSION-DEV-OT
+       value=`cat ../../../../../JAVAVERSION-DEV-OT`
+       NEXTVERSION=${value}
+       echo "${NEXTVERSION}"
+       #echo "${NEXTVERSION}" > "$destdir"
+       
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=dev-java-registry
+       
+       docker build -t newcloudnetworks/dev-java-registry:ot-latest -t newcloudnetworks/dev-java-registry:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/dev-java-registry:latest newcloudnetworks/dev-java-registry:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/dev-java-registry:latest newcloudnetworks/dev-java-registry:ot-latest
+       #dockerhub cred
+       #docker login --username=$DOCKER_USER_NAME -p=$DOCKER_PASSWORD
+       
+       
+       #######################################################################################################
+       ##########Cloud-config-server docker image creation DEV###############################################
+       #######################################################################################################
+       
+       echo "Cloud-config-server docker image creation Dev"
+       cd ../cloud-config-server
+       sed -i 's+DEFAULT_ENV=test+DEFAULT_ENV=dev+g' script.sh
+       destdir=../../../../../JAVAVERSION-DEV-OT
+       value=`cat ../../../../../JAVAVERSION-DEV-OT`
+       NEXTVERSION=${value}
+       
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=dev-java-config
+       
+       docker build -t newcloudnetworks/dev-java-config:ot-latest -t newcloudnetworks/dev-java-config:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/dev-java-config:latest newcloudnetworks/dev-java-config:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/dev-java-config:latest newcloudnetworks/dev-java-config:ot-latest
+       #dockerhub cred
+       #docker login --username=$DOCKER_USER_NAME -p=$DOCKER_PASSWORD
+      
+       #######################################################################################################
+       ##########Creating pasco-product-web docker image DEV##################################################
+       #######################################################################################################
+       
+       echo "Creating pasco-product-web docker image"
+       cd ../pasco-product-web
+       
+       sed -i 's+DEFAULT_ENV=test+DEFAULT_ENV=dev+g' ./script.sh
+       sed -i 's+9199+31199+g' ./src/main/resources/application.properties
+       
+       destdir=../../../../../JAVAVERSION-DEV-OT
+       value=`cat ../../../../../JAVAVERSION-DEV-OT`
+       NEXTVERSION=${value}
+       
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=dev-java-pasco-product-web
+       
+       docker build -t newcloudnetworks/dev-java-pasco-product-web:ot-latest -t newcloudnetworks/dev-java-pasco-product-web:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/dev-java-pasco-product-web:latest newcloudnetworks/dev-java-pasco-product-web:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/dev-java-pasco-product-web:latest newcloudnetworks/dev-java-pasco-product-web:ot-latest
+       #dockerhub cred
+       #docker login --username=$DOCKER_USER_NAME -p=$DOCKER_PASSWORD
+       
+       ######################################################################################################
+       ##########Creating pasco-contact-web docker image DEV#################################################
+       ######################################################################################################
+       
+       echo "Creating pasco-contact-web docker image Dev"
+       
+       cd ../pasco-contact-web
+       sed -i 's+DEFAULT_ENV=test+DEFAULT_ENV=dev+g' script.sh
+       sed -i 's+9196+31196+g' src/main/resources/application.properties
+       destdir=../../../../../JAVAVERSION-DEV-OT
+       value=`cat ../../../../../JAVAVERSION-DEV-OT`
+       NEXTVERSION=${value}
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=dev-java-pasco-contact-web
+       
+       docker build -t newcloudnetworks/dev-java-pasco-contact-web:ot-latest -t newcloudnetworks/dev-java-pasco-contact-web:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/dev-java-pasco-contact-web:latest newcloudnetworks/dev-java-pasco-contact-web:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/dev-java-pasco-contact-web:latest newcloudnetworks/dev-java-pasco-contact-web:ot-latest
+       #dockerhub cred
+       #docker login --username=$DOCKER_USER_NAME -p=$DOCKER_PASSWORD
+       
+       ######################################################################################################
+       ########################Pasco-customer-web docker image creation DEV##################################
+       ######################################################################################################
+       
+       echo "Pasco-customer-web docker image creation Dev"
+       
+       cd ../pasco-customer-web
+       sed -i 's+DEFAULT_ENV=test+DEFAULT_ENV=dev+g' script.sh
+       sed -i 's+9197+31197+g' src/main/resources/application.properties
+       destdir=../../../../../JAVAVERSION-DEV-OT
+       value=`cat ../../../../../JAVAVERSION-DEV-OT`
+       NEXTVERSION=${value}
+       
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=dev-java-pasco-customer-web
+       
+       docker build -t newcloudnetworks/dev-java-pasco-customer-web:ot-latest -t newcloudnetworks/dev-java-pasco-customer-web:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/dev-java-pasco-customer-web:latest newcloudnetworks/dev-java-pasco-customer-web:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/dev-java-pasco-customer-web:latest newcloudnetworks/dev-java-pasco-customer-web:ot-latest
+       #dockerhub cred
+       #docker login --username=$DOCKER_USER_NAME -p=$DOCKER_PASSWORD
+       
+       ######################################################################################################
+       ########################Pasco-partner-web docker image creation DEV###################################
+       ######################################################################################################
+       
+       echo "Pasco-partner-web docker image creation Dev"
+       
+       cd ../pasco-partner-web
+       sed -i 's+DEFAULT_ENV=test+DEFAULT_ENV=dev+g' script.sh
+       sed -i 's+9198+31198+g' src/main/resources/application.properties
+       
+       destdir=../../../../../JAVAVERSION-DEV-OT
+       value=`cat ../../../../../JAVAVERSION-DEV-OT`
+       NEXTVERSION=${value}
+       
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=dev-java-pasco-partner-web
+       
+       docker build -t newcloudnetworks/dev-java-pasco-partner-web:ot-latest -t newcloudnetworks/dev-java-pasco-partner-web:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/dev-java-pasco-partner-web:latest newcloudnetworks/dev-java-pasco-partner-web:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/dev-java-pasco-partner-web:latest newcloudnetworks/dev-java-pasco-partner-web:ot-latest
+       #dockerhub cred
+       #docker login --username=$DOCKER_USER_NAME -p=$DOCKER_PASSWORD
+       
+       ######################################################################################################
+       ########################Creating pasco-subscription-web docker image DEV###################################
+       ######################################################################################################
+       
+       echo "Creating pasco-subscription-web docker image DEV"
+       
+       cd ../pasco-subscription-web
+       sed -i 's+DEFAULT_ENV=test+DEFAULT_ENV=dev+g' script.sh
+       sed -i 's+9193+31193+g' src/main/resources/application.properties
+       
+       destdir=../../../../../JAVAVERSION-DEV-OT
+       value=`cat ../../../../../JAVAVERSION-DEV-OT`
+       NEXTVERSION=${value}
+       
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=dev-java-pasco-subscription-web
+       
+       docker build -t newcloudnetworks/dev-java-pasco-subscription-web:ot-latest -t newcloudnetworks/dev-java-pasco-subscription-web:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/dev-java-pasco-subscription-web:latest newcloudnetworks/dev-java-pasco-subscription-web:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/dev-java-pasco-subscription-web:latest newcloudnetworks/dev-java-pasco-subscription-web:ot-latest
+       #dockerhub cred
+       #docker login --username=$DOCKER_USER_NAME -p=$DOCKER_PASSWORD
+       
+       ######################################################################################################
+       ########################Creating cloud-gateway docker image creation DEV###################################
+       ######################################################################################################
+       
+       echo "Creating cloud-gateway docker image creation DEV"
+       
+       cd ../cloud-gateway
+       sed -i 's+DEFAULT_ENV=test+DEFAULT_ENV=dev+g' script.sh
+       destdir=../../../../../JAVAVERSION-DEV-OT
+       value=`cat ../../../../../JAVAVERSION-DEV-OT`
+       NEXTVERSION=${value}
+       
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=dev-java-cloud-gateway
+       
+       docker build -t newcloudnetworks/dev-java-cloud-gateway:ot-latest -t newcloudnetworks/dev-java-cloud-gateway:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/dev-java-cloud-gateway:latest newcloudnetworks/dev-java-cloud-gateway:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/dev-java-cloud-gateway:latest newcloudnetworks/dev-java-cloud-gateway:ot-latest
+       #dockerhub cred
+       #docker login --username=$DOCKER_USER_NAME -p=$DOCKER_PASSWORD
+       
+       ######################################################################################################
+       ########################hystrix-dashboard docker image creation DEV###################################
+       ######################################################################################################
+       
+       echo "hystrix-dashboard docker image creation DEV"
+       
+       cd ../hystrix-dashboard
+       sed -i 's+DEFAULT_ENV=test+DEFAULT_ENV=dev+g' script.sh
+       destdir=../../../../../JAVAVERSION-DEV-OT
+       value=`cat ../../../../../JAVAVERSION-DEV-OT`
+       NEXTVERSION=${value}
+       
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=dev-java-hystrix-dashboard
+       
+       docker build -t newcloudnetworks/dev-java-hystrix-dashboard:ot-latest -t newcloudnetworks/dev-java-hystrix-dashboard:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/dev-java-hystrix-dashboard:latest newcloudnetworks/dev-java-hystrix-dashboard:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/dev-java-hystrix-dashboard:latest newcloudnetworks/dev-java-hystrix-dashboard:ot-latest
+       #dockerhub cred
+       echo "$DOCKER_PASSWORD" | docker login --username $DOCKER_USER_NAME --password-stdin
+       # push it
+       docker push newcloudnetworks/dev-java-zipkin:ot-latest
+       docker push newcloudnetworks/dev-java-zipkin:ot-$NEXTVERSION 
+       # push it
+       docker push newcloudnetworks/dev-java-registry:ot-latest
+       docker push newcloudnetworks/dev-java-registry:ot-$NEXTVERSION
+       # push it
+       docker push newcloudnetworks/dev-java-config:ot-latest
+       docker push newcloudnetworks/dev-java-config:ot-$NEXTVERSION
+       # push it
+       docker push newcloudnetworks/dev-java-pasco-product-web:ot-latest
+       docker push newcloudnetworks/dev-java-pasco-product-web:ot-$NEXTVERSION
+       # push it
+       docker push newcloudnetworks/dev-java-pasco-contact-web:ot-latest
+       docker push newcloudnetworks/dev-java-pasco-contact-web:ot-$NEXTVERSION
+       # push it
+       docker push newcloudnetworks/dev-java-pasco-customer-web:ot-latest
+       docker push newcloudnetworks/dev-java-pasco-customer-web:ot-$NEXTVERSION
+       # push it
+       docker push newcloudnetworks/dev-java-pasco-partner-web:ot-latest
+       docker push newcloudnetworks/dev-java-pasco-partner-web:ot-$NEXTVERSION
+       # push it
+       docker push newcloudnetworks/dev-java-pasco-subscription-web:ot-latest
+       docker push newcloudnetworks/dev-java-pasco-subscription-web:ot-$NEXTVERSION
+       # push it
+       docker push newcloudnetworks/dev-java-cloud-gateway:ot-latest
+       docker push newcloudnetworks/dev-java-cloud-gateway:ot-$NEXTVERSION
+       # push it
+       docker push newcloudnetworks/dev-java-hystrix-dashboard:ot-latest
+       docker push newcloudnetworks/dev-java-hystrix-dashboard:ot-$NEXTVERSION
+       
+       
+       cd /home/gitlab-runner/builds/Wj22B-Gd/0/otportal-platform
+       #cd /home/gitlab-runner/builds/eL5_uGRS/0/otportal-platform
+       rm -rf ocp-java
+       
+  rules: 
+     - if: $CI_COMMIT_BRANCH == "docker-in1-dev"
+       when: always
+
+k8s-delete-dev:
+     variables:
+        GIT_STRATEGY: none
+     tags:
+       - dev-tanzu-ot
+     stage: k8s-delete-dev
+     script:
+       - |-
+          cd /home/gitlab-runner/builds/java-yaml
+          kubectl delete -f cloud-gateway/deployment.yaml
+          kubectl delete -f config-server/deployment.yaml
+          kubectl delete -f hystrix-dashboard/deployment.yaml
+          kubectl delete -f pasco-contact-web/deployment.yaml
+          kubectl delete -f pasco-customer-web/deployment.yaml
+          kubectl delete -f pasco-partner-web/deployment.yaml
+          kubectl delete -f pasco-product-web/deployment.yaml
+          kubectl delete -f pasco-subscription-web/deployment.yaml
+          kubectl delete -f service-registry/deployment.yaml
+          kubectl delete -f zipkin/deployment.yaml
+             
+     rules: 
+     - if: ($CI_COMMIT_BRANCH == "docker-in1-dev")
+       when: on_success
+
+k8s-deploy-dev:
+     variables:
+        GIT_STRATEGY: none
+     tags:
+       - dev-tanzu-ot
+     stage: k8s-deploy-dev
+     script:
+       - |-
+          sleep 60
+          echo "Zipkin kubernetes implementation DEV"
+          cd /home/gitlab-runner/builds/java-yaml/zipkin
+          kubectl apply -f deployment.yaml
+          sleep 10
+          echo "end"
+          
+          echo "Cloud-config kubernetes implementation DEV"
+          cd //home/gitlab-runner/builds/java-yaml/config-server
+          kubectl apply -f deployment.yaml
+          sleep 10
+          echo "end"
+          
+          echo "Service-Registry kubernetes implementation"
+          cd /home/gitlab-runner/builds/java-yaml/service-registry
+          kubectl apply -f deployment.yaml
+          sleep 2m
+          echo "end"
+          
+          echo "Pasco-product-web kubernetes implementation"
+          cd /home/gitlab-runner/builds/java-yaml/pasco-product-web
+          kubectl apply -f deployment.yaml
+          sleep 20
+          echo "end"
+          
+          echo "Pasco-customer-web kubernetes implementation"
+          cd /home/gitlab-runner/builds/java-yaml/pasco-customer-web
+          kubectl apply -f deployment.yaml
+          echo "end"
+          
+          echo "Pasco-partner-web kubernetes implementation"
+          cd /home/gitlab-runner/builds/java-yaml/pasco-partner-web
+          kubectl apply -f deployment.yaml
+          echo "end"
+          
+          echo "Pasco-contact-web kubernetes implementation"
+          cd /home/gitlab-runner/builds/java-yaml/pasco-contact-web
+          kubectl apply -f deployment.yaml
+          echo "end"
+          
+          echo "Pasco-subscription-web kubernetes implementation"
+          cd /home/gitlab-runner/builds/java-yaml/pasco-subscription-web
+          kubectl apply -f deployment.yaml
+          echo "end"
+          
+          echo "cloud-gateway kubernetes implementation"
+          cd /home/gitlab-runner/builds/java-yaml/cloud-gateway
+          kubectl apply -f deployment.yaml
+          echo "end"
+          
+          echo "Hystrix-dashboard kubernetes implementation"
+          cd /home/gitlab-runner/builds/java-yaml/hystrix-dashboard
+          kubectl apply -f deployment.yaml
+          echo "end"
+          
+     rules: 
+     - if: $CI_COMMIT_BRANCH == "docker-in1-dev"
+       when: on_success
+
+build-check-dev:
+     variables:
+        GIT_STRATEGY: none
+     tags:
+       - dev-tanzu-ot
+     stage: build-check-dev
+     script: 
+       - counter=0
+       - sleep 120s
+       - >
+         while [ $counter -lt 6 ]; do
+          response=$(curl -s https://api-dev.otava.com/service-count)
+          if [ "$response" = "13" ]; then
+            echo "Service count is 7. Proceeding with the pipeline..."
+            echo "success"
+            exit 0  # Exit successfully
+          fi
+          sleep 30  # Wait for 30 seconds before the next iteration
+          counter=$((counter + 1))
+         done
+          echo "java build check failed for docker-dev, failing the pipeline"
+          exit 1
+     rules: 
+     - if: $CI_COMMIT_BRANCH == "docker-in1-dev"
+       when: on_success
+
+
+rollback-if-build-check-failed-dev:
+     variables:
+        GIT_STRATEGY: none
+     tags:
+       - dev-tanzu-ot
+     stage: rollback-if-build-check-failed-dev
+     script:
+       - |
+          sleep 60s
+          bash /home/gitlab-runner/builds/delete-deploy-java.sh
+          echo "Zipkin kubernetes rollback implementation DEV"
+          cd /home/gitlab-runner/builds/java-yaml/zipkin
+          sh rollback.sh
+          sleep 20s
+          echo "end"
+          
+          echo "Cloud-config kubernetes rollback implementation DEV"
+          cd /home/gitlab-runner/builds/java-yaml/config-server
+          sh rollback.sh
+          sleep 20s
+          echo "end"
+          
+          echo "Service-Registry kubernetes rollback implementation"
+          cd /home/gitlab-runner/builds/java-yaml/service-registry
+          sh rollback.sh
+          sleep 2m
+          echo "end"
+          
+          echo "Pasco-product-web kubernetes rollback implementation"
+          cd /home/gitlab-runner/builds/java-yaml/pasco-product-web
+          sh rollback.sh
+          sleep 20s
+          echo "end"
+          
+          echo "Pasco-customer-web kubernetes rollback implementation"
+          cd /home/gitlab-runner/builds/java-yaml/pasco-customer-web
+          sh rollback.sh
+          sleep 10s
+          echo "end"
+          
+          echo "Pasco-partner-web kubernetes rollback implementation"
+          cd /home/gitlab-runner/builds/java-yaml/pasco-partner-web
+          sh rollback.sh
+          sleep 5s
+          echo "end"
+          
+          echo "Pasco-contact-web kubernetes rollback implementation"
+          cd /home/gitlab-runner/builds/java-yaml/pasco-contact-web
+          sh rollback.sh
+          sleep 5s
+          echo "end"
+          
+          echo "Pasco-subscription-web kubernetes rollback implementation"
+          cd /home/gitlab-runner/builds/java-yaml/pasco-subscription-web
+          sh rollback.sh
+          sleep 10s
+          echo "end"
+          
+          echo "cloud-gateway kubernetes rollback implementation"
+          cd /home/gitlab-runner/builds/java-yaml/cloud-gateway
+          sh rollback.sh
+          sleep 5s
+          echo "end"
+          
+          echo "Hystrix-dashboard kubernetes rollback implementation"
+          cd /home/gitlab-runner/builds/java-yaml/hystrix-dashboard
+          sh rollback.sh
+          echo "end"
+     rules: 
+     - if: $CI_COMMIT_BRANCH == "docker-in1-dev"
+       when: on_failure
+
+stable-tag-dev:
+          variables:
+             GIT_STRATEGY: none
+          tags:
+           - dev-tanzu-ot
+          stage: stable-tag-dev
+          script:
+            - |-
+               cp /home/gitlab-runner/builds/JAVAVERSION-DEV-OT /home/gitlab-runner/builds/JAVAVERSION-DEV-OT-STABLE
+          rules: 
+          - if: ($CI_COMMIT_BRANCH == "docker-in1-dev")
+            when: on_success
+
+if-old-commit-docker-qa:
+  tags:
+    - qa-in1
+  stage: if-old-commit-docker-qa
+  script:
+    - LAST_SHA=$(curl -s --header "PRIVATE-TOKEN:9RG6-Fw7ottfAzRYBMYY" "https://git.otava.com/api/v4/projects/273/pipelines?ref=docker-in1&per_page=5&&sort=desc" | jq -c '.[1] | .sha' | sed -e 's/^"//' -e 's/"$//')
+    - LAST_PIPE=$(curl -s --header "PRIVATE-TOKEN:9RG6-Fw7ottfAzRYBMYY" "https://git.otava.com/api/v4/projects/273/pipelines?per_page=1&&sort=desc" | jq -c '.[0] | .id' | sed -e 's/^"//' -e 's/"$//')
+    - echo $LAST_SHA
+    - echo $LAST_PIPE
+    - > 
+      if [ "$LAST_SHA" == "$CI_COMMIT_SHA" ]; then 
+         echo "There are no changes since last run in docker-qa"
+         curl --request POST --header "PRIVATE-TOKEN:9RG6-Fw7ottfAzRYBMYY" "https://git.otava.com/api/v4/projects/273/pipelines/$LAST_PIPE/cancel"
+      fi
+  rules: 
+     - if: ($CI_COMMIT_BRANCH == "docker-in1" && $CI_PIPELINE_SOURCE == "schedule")
+       when: always
+
+deleting-image-qa:
+          variables:
+             GIT_STRATEGY: none
+          tags:
+           - qa-in1
+          stage: deleting-image-qa
+          script:
+            - |-
+               cd /home/gitlab-runner/builds/docker-scripts
+               bash docker-java-qa.sh
+          rules: 
+          - if: ($CI_COMMIT_BRANCH == "docker-in1" && $CI_PIPELINE_SOURCE == "schedule")
+            when: on_success
+
+build-qa:
+  tags:
+    - qa-in1
+  stage: build-qa
+  script:
+    - |-
+    
+       #####################################################################################################
+       ###############################Building the Java code DEV#############################################
+       ######################################################################################################
+       
+       echo "Building the Java code"
+       
+       sed -i 's+test+dev+g' service-registry/script.sh
+       sed -i 's+test+dev+g' cloud-config-server/script.sh
+       sed -i 's+DEFAULT_ENV=test+DEFAULT_ENV=dev+g' pasco-product-web/script.sh
+       sed -i 's+9199+30199+g' pasco-product-web/src/main/resources/application.properties
+
+       sed -i 's+localhost:8761+ot-service-registry-svc-qa:8761+g' pasco-product-web/src/main/resources/application.properties
+       sed -i 's+localhost:8761+ot-service-registry-svc-qa:8761+g' pasco-contact-web/src/main/resources/application.properties
+       sed -i 's+localhost:8761+ot-service-registry-svc-qa:8761+g' pasco-customer-web/src/main/resources/application.properties
+       sed -i 's+localhost:8761+ot-service-registry-svc-qa:8761+g' pasco-partner-web/src/main/resources/application.properties
+       sed -i 's+localhost:8761+ot-service-registry-svc-qa:8761+g' pasco-subscription-web/src/main/resources/application.properties
+
+       sed -i 's+localhost+ot-pasco-product-web-svc-qa+g' pasco-product-web/src/main/resources/application.properties
+       sed -i 's+localhost+ot-java-pasco-contact-web-svc-qa+g' pasco-contact-web/src/main/resources/application.properties
+       sed -i 's+localhost+ot-pasco-customer-web-svc-qa+g' pasco-customer-web/src/main/resources/application.properties
+       sed -i 's+localhost+ot-pasco-partner-web-svc-qa+g' pasco-partner-web/src/main/resources/application.properties
+       sed -i 's+localhost+ot-java-pasco-subscription-web-svc-qa+g' pasco-subscription-web/src/main/resources/application.properties
+       
+       sed -i 's+DEFAULT_ENV=test+DEFAULT_ENV=dev+g' pasco-contact-web/script.sh
+       sed -i 's+9196+30196+g' pasco-contact-web/src/main/resources/application.properties
+       
+       sed -i 's+DEFAULT_ENV=test+DEFAULT_ENV=dev+g' pasco-customer-web/script.sh
+       sed -i 's+9197+30197+g' pasco-customer-web/src/main/resources/application.properties
+       
+       sed -i 's+DEFAULT_ENV=test+DEFAULT_ENV=dev+g' pasco-partner-web/script.sh
+       sed -i 's+9198+30198+g' pasco-partner-web/src/main/resources/application.properties
+       
+       sed -i 's+DEFAULT_ENV=test+DEFAULT_ENV=dev+g' cloud-gateway/script.sh
+       
+       ################################################################
+       
+       sed -i 's+main+docker+g' cloud-config-server/src/main/resources/application.yml
+       sed -i 's+8761+8761+g' cloud-config-server/src/main/resources/application.yml
+       sed -i 's+pchandra+devteam+g' cloud-config-server/src/main/resources/application.yml
+       sed -i 's+rq-T1V-k2yLHGDBngMxT+3dbChxwc4R3_jrTqoyFw+g' cloud-config-server/src/main/resources/application.yml
+       sed -i 's+localhost+ot-service-registry-svc-qa+g' cloud-config-server/src/main/resources/application.yml
+       sed -i 's+127.0.0.1+ot-service-registry-svc-qa+g' cloud-config-server/src/main/resources/application.yml
+       
+       sed -i 's+localhost+ot-java-config-server-svc-qa+g' cloud-gateway/src/main/resources/bootstrap.yml
+       sed -i 's+9296+9296+g' cloud-gateway/src/main/resources/bootstrap.yml
+       sed -i 's+main+docker+g' cloud-gateway/src/main/resources/bootstrap.yml
+       
+       sed -i 's+localhost+ot-java-config-server-svc-qa+g' hystrix-dashboard/src/main/resources/bootstrap.yml
+       sed -i 's+9296+9296+g' hystrix-dashboard/src/main/resources/bootstrap.yml
+       sed -i 's+main+docker+g' hystrix-dashboard/src/main/resources/bootstrap.yml
+       
+       sed -i 's+9199+30199+g' pasco-product-web/src/main/resources/application.properties
+       sed -i 's+test+dev+g' pasco-product-web/src/main/resources/application.properties
+       
+       sed -i 's+9196+30196+g' pasco-contact-web/src/main/resources/application.properties
+       sed -i 's+test+dev+g' pasco-contact-web/src/main/resources/application.properties
+       
+       sed -i 's+9197+30197+g' pasco-customer-web/src/main/resources/application.properties
+       sed -i 's+test+dev+g' pasco-customer-web/src/main/resources/application.properties
+       
+       sed -i 's+9198+30198+g' pasco-partner-web/src/main/resources/application.properties
+       sed -i 's+test+dev+g' pasco-partner-web/src/main/resources/application.properties
+       sed -i 's+9193+30193+g' pasco-subscription-web/src/main/resources/application.properties
+       cat pasco-product-web/src/main/resources/application.properties
+       cat pasco-contact-web/src/main/resources/application.properties
+       cat pasco-customer-web/src/main/resources/application.properties
+       cat pasco-partner-web/src/main/resources/application.properties
+       cat pasco-subscription-web/src/main/resources/application.properties
+       ###########################################################################
+       JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+       MAVEN_SKIP_RC=true
+       echo $JAVA_HOME
+       java -version
+       mkdir -p ~/.m2/repository/com/connectwise/manage/connectwise-sdk/2024.1
+       cp connectwise-sdk-2024.1.jar ~/.m2/repository/com/connectwise/manage/connectwise-sdk/2024.1
+       #mvn test
+       mvn clean package -Dmaven.test.skip
+
+       #######################################################################################################
+       ######################Zipkin docker image creation DEV#################################################
+       #######################################################################################################
+       
+       echo "Zipkin docker image creation DEV"
+       cd zipkin
+       
+       destdir=../../../../../JAVAVERSION-QA-OT
+       value=`cat ../../../../../JAVAVERSION-QA-OT`
+       NEXTVERSION=$(echo ${value} | awk -F. -v OFS=. '{$NF += 1 ; print}')
+       echo "${NEXTVERSION}"
+       echo "${NEXTVERSION}" > "$destdir"
+       echo "HAHAHAHAHAHAHAHA"
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=dev-java-zipkin
+       docker build -t newcloudnetworks/java-docker-zipkin:ot-latest -t newcloudnetworks/java-docker-zipkin:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/dev-java-zipkin:latest newcloudnetworks/dev-java-zipkin:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/dev-java-zipkin:latest newcloudnetworks/dev-java-zipkin:ot-latest
+       #dockerhub cred
+       #docker login --username=$DOCKER_USER_NAME -p=$DOCKER_PASSWORD
+       
+       #######################################################################################################
+       ##########Creating docker image for service-registry DEV###############################################
+       #######################################################################################################
+       
+       echo "Creating docker image for service-registry DEV"
+       cd ../service-registry
+       
+       sed -i 's+test+dev+g' script.sh
+       
+       destdir=../../../../../JAVAVERSION-QA-OT
+       value=`cat ../../../../../JAVAVERSION-QA-OT`
+       NEXTVERSION=${value}
+       echo "${NEXTVERSION}"
+       #echo "${NEXTVERSION}" > "$destdir"
+       
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=dev-java-registry
+       
+       docker build -t newcloudnetworks/java-docker-registry:ot-latest -t newcloudnetworks/java-docker-registry:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/dev-java-registry:latest newcloudnetworks/dev-java-registry:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/dev-java-registry:latest newcloudnetworks/dev-java-registry:ot-latest
+       #dockerhub cred
+       #docker login --username=$DOCKER_USER_NAME -p=$DOCKER_PASSWORD
+       
+       
+       #######################################################################################################
+       ##########Cloud-config-server docker image creation DEV###############################################
+       #######################################################################################################
+       
+       echo "Cloud-config-server docker image creation Dev"
+       cd ../cloud-config-server
+       sed -i 's+DEFAULT_ENV=test+DEFAULT_ENV=dev+g' script.sh
+       destdir=../../../../../JAVAVERSION-QA-OT
+       value=`cat ../../../../../JAVAVERSION-QA-OT`
+       NEXTVERSION=${value}
+       
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=dev-java-config
+       
+       docker build -t newcloudnetworks/java-docker-config:ot-latest -t newcloudnetworks/java-docker-config:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/dev-java-config:latest newcloudnetworks/dev-java-config:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/dev-java-config:latest newcloudnetworks/dev-java-config:ot-latest
+       #dockerhub cred
+       #docker login --username=$DOCKER_USER_NAME -p=$DOCKER_PASSWORD
+      
+       #######################################################################################################
+       ##########Creating pasco-product-web docker image DEV##################################################
+       #######################################################################################################
+       
+       echo "Creating pasco-product-web docker image"
+       cd ../pasco-product-web
+       
+       sed -i 's+DEFAULT_ENV=test+DEFAULT_ENV=dev+g' ./script.sh
+       #sed -i 's+9199+31199+g' ./src/main/resources/application.properties
+       
+       destdir=../../../../../JAVAVERSION-QA-OT
+       value=`cat ../../../../../JAVAVERSION-QA-OT`
+       NEXTVERSION=${value}
+       
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=dev-java-pasco-product-web
+       
+       docker build -t newcloudnetworks/java-docker-pasco-product-web:ot-latest -t newcloudnetworks/java-docker-pasco-product-web:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/dev-java-pasco-product-web:latest newcloudnetworks/dev-java-pasco-product-web:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/dev-java-pasco-product-web:latest newcloudnetworks/dev-java-pasco-product-web:ot-latest
+       #dockerhub cred
+       #docker login --username=$DOCKER_USER_NAME -p=$DOCKER_PASSWORD
+       
+       ######################################################################################################
+       ##########Creating pasco-contact-web docker image DEV#################################################
+       ######################################################################################################
+       
+       echo "Creating pasco-contact-web docker image Dev"
+       
+       cd ../pasco-contact-web
+       sed -i 's+DEFAULT_ENV=test+DEFAULT_ENV=dev+g' script.sh
+       #sed -i 's+9196+31196+g' src/main/resources/application.properties
+       destdir=../../../../../JAVAVERSION-QA-OT
+       value=`cat ../../../../../JAVAVERSION-QA-OT`
+       NEXTVERSION=${value}
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=dev-java-pasco-contact-web
+       
+       docker build -t newcloudnetworks/java-docker-pasco-contact-web:ot-latest -t newcloudnetworks/java-docker-pasco-contact-web:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/dev-java-pasco-contact-web:latest newcloudnetworks/dev-java-pasco-contact-web:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/dev-java-pasco-contact-web:latest newcloudnetworks/dev-java-pasco-contact-web:ot-latest
+       #dockerhub cred
+       #docker login --username=$DOCKER_USER_NAME -p=$DOCKER_PASSWORD
+       
+       ######################################################################################################
+       ########################Pasco-customer-web docker image creation DEV##################################
+       ######################################################################################################
+       
+       echo "Pasco-customer-web docker image creation Dev"
+       
+       cd ../pasco-customer-web
+       sed -i 's+DEFAULT_ENV=test+DEFAULT_ENV=dev+g' script.sh
+       sed -i 's+9197+30197+g' src/main/resources/application.properties
+       destdir=../../../../../JAVAVERSION-QA-OT
+       value=`cat ../../../../../JAVAVERSION-QA-OT`
+       NEXTVERSION=${value}
+       
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=dev-java-pasco-customer-web
+       
+       docker build -t newcloudnetworks/java-docker-pasco-customer-web:ot-latest -t newcloudnetworks/java-docker-pasco-customer-web:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/dev-java-pasco-customer-web:latest newcloudnetworks/dev-java-pasco-customer-web:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/dev-java-pasco-customer-web:latest newcloudnetworks/dev-java-pasco-customer-web:ot-latest
+       #dockerhub cred
+       #docker login --username=$DOCKER_USER_NAME -p=$DOCKER_PASSWORD
+       
+       ######################################################################################################
+       ########################Pasco-partner-web docker image creation DEV###################################
+       ######################################################################################################
+       
+       echo "Pasco-partner-web docker image creation Dev"
+       
+       cd ../pasco-partner-web
+       sed -i 's+DEFAULT_ENV=test+DEFAULT_ENV=dev+g' script.sh
+       sed -i 's+9198+30198+g' src/main/resources/application.properties
+       
+       destdir=../../../../../JAVAVERSION-QA-OT
+       value=`cat ../../../../../JAVAVERSION-QA-OT`
+       NEXTVERSION=${value}
+       
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=dev-java-pasco-partner-web
+       
+       docker build -t newcloudnetworks/java-docker-pasco-partner-web:ot-latest -t newcloudnetworks/java-docker-pasco-partner-web:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/dev-java-pasco-partner-web:latest newcloudnetworks/dev-java-pasco-partner-web:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/dev-java-pasco-partner-web:latest newcloudnetworks/dev-java-pasco-partner-web:ot-latest
+       #dockerhub cred
+       #docker login --username=$DOCKER_USER_NAME -p=$DOCKER_PASSWORD
+       
+       ######################################################################################################
+       ########################Creating pasco-subscription-web docker image DEV###################################
+       ######################################################################################################
+       
+       echo "Creating pasco-subscription-web docker image DEV"
+       
+       cd ../pasco-subscription-web
+       sed -i 's+DEFAULT_ENV=test+DEFAULT_ENV=dev+g' script.sh
+       sed -i 's+9193+30193+g' src/main/resources/application.properties
+       
+       destdir=../../../../../JAVAVERSION-QA-OT
+       value=`cat ../../../../../JAVAVERSION-QA-OT`
+       NEXTVERSION=${value}
+       
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=dev-java-pasco-subscription-web
+       
+       docker build -t newcloudnetworks/java-docker-pasco-subscription-web:ot-latest -t newcloudnetworks/java-docker-pasco-subscription-web:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/dev-java-pasco-subscription-web:latest newcloudnetworks/dev-java-pasco-subscription-web:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/dev-java-pasco-subscription-web:latest newcloudnetworks/dev-java-pasco-subscription-web:ot-latest
+       #dockerhub cred
+       #docker login --username=$DOCKER_USER_NAME -p=$DOCKER_PASSWORD
+       
+       ######################################################################################################
+       ########################Creating cloud-gateway docker image creation DEV###################################
+       ######################################################################################################
+       
+       echo "Creating cloud-gateway docker image creation DEV"
+       
+       cd ../cloud-gateway
+       sed -i 's+DEFAULT_ENV=test+DEFAULT_ENV=dev+g' script.sh
+       destdir=../../../../../JAVAVERSION-QA-OT
+       value=`cat ../../../../../JAVAVERSION-QA-OT`
+       NEXTVERSION=${value}
+       
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=dev-java-cloud-gateway
+       
+       docker build -t newcloudnetworks/java-docker-cloud-gateway:ot-latest -t newcloudnetworks/java-docker-cloud-gateway:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/dev-java-cloud-gateway:latest newcloudnetworks/dev-java-cloud-gateway:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/dev-java-cloud-gateway:latest newcloudnetworks/dev-java-cloud-gateway:ot-latest
+       #dockerhub cred
+       #docker login --username=$DOCKER_USER_NAME -p=$DOCKER_PASSWORD
+       
+       ######################################################################################################
+       ########################hystrix-dashboard docker image creation DEV###################################
+       ######################################################################################################
+       
+       echo "hystrix-dashboard docker image creation DEV"
+       
+       cd ../hystrix-dashboard
+       sed -i 's+DEFAULT_ENV=test+DEFAULT_ENV=dev+g' script.sh
+       destdir=../../../../../JAVAVERSION-QA-OT
+       value=`cat ../../../../../JAVAVERSION-QA-OT`
+       NEXTVERSION=${value}
+       
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=dev-java-hystrix-dashboard
+       
+       docker build -t newcloudnetworks/java-docker-hystrix-dashboard:ot-latest -t newcloudnetworks/java-docker-hystrix-dashboard:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/dev-java-hystrix-dashboard:latest newcloudnetworks/dev-java-hystrix-dashboard:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/dev-java-hystrix-dashboard:latest newcloudnetworks/dev-java-hystrix-dashboard:ot-latest
+       #dockerhub cred
+       echo "$DOCKER_PASSWORD" | docker login --username $DOCKER_USER_NAME --password-stdin
+       # push it
+       docker push newcloudnetworks/java-docker-zipkin:ot-latest
+       docker push newcloudnetworks/java-docker-zipkin:ot-$NEXTVERSION 
+       # push it
+       docker push newcloudnetworks/java-docker-registry:ot-latest
+       docker push newcloudnetworks/java-docker-registry:ot-$NEXTVERSION
+       # push it
+       docker push newcloudnetworks/java-docker-config:ot-latest
+       docker push newcloudnetworks/java-docker-config:ot-$NEXTVERSION
+       # push it
+       docker push newcloudnetworks/java-docker-pasco-product-web:ot-latest
+       docker push newcloudnetworks/java-docker-pasco-product-web:ot-$NEXTVERSION
+       # push it
+       docker push newcloudnetworks/java-docker-pasco-contact-web:ot-latest
+       docker push newcloudnetworks/java-docker-pasco-contact-web:ot-$NEXTVERSION
+       # push it
+       docker push newcloudnetworks/java-docker-pasco-customer-web:ot-latest
+       docker push newcloudnetworks/java-docker-pasco-customer-web:ot-$NEXTVERSION
+       # push it
+       docker push newcloudnetworks/java-docker-pasco-partner-web:ot-latest
+       docker push newcloudnetworks/java-docker-pasco-partner-web:ot-$NEXTVERSION
+       # push it
+       docker push newcloudnetworks/java-docker-pasco-subscription-web:ot-latest
+       docker push newcloudnetworks/java-docker-pasco-subscription-web:ot-$NEXTVERSION
+       # push it
+       docker push newcloudnetworks/java-docker-cloud-gateway:ot-latest
+       docker push newcloudnetworks/java-docker-cloud-gateway:ot-$NEXTVERSION
+       # push it
+       docker push newcloudnetworks/java-docker-hystrix-dashboard:ot-latest
+       docker push newcloudnetworks/java-docker-hystrix-dashboard:ot-$NEXTVERSION
+       
+       
+       #cd /home/gitlab-runner/builds/Wj22B-Gd/0/otportal-platform
+       #cd /home/gitlab-runner/builds/eL5_uGRS/0/otportal-platform
+      # rm -rf ocp-java
+       
+  rules: 
+     - if: ($CI_COMMIT_BRANCH == "docker-in1" && $CI_PIPELINE_SOURCE == "schedule")
+       when: always
+
+k8s-delete-qa:
+     variables:
+        GIT_STRATEGY: none
+     tags:
+       - qa-in1
+     stage: k8s-delete-qa
+     script:
+       - |-
+          cd /home/gitlab-runner/builds/java-yaml
+          kubectl delete -f cloud-gateway/deployment.yaml
+          kubectl delete -f config-server/deployment.yaml
+          kubectl delete -f hystrix-dashboard/deployment.yaml
+          kubectl delete -f pasco-contact-web/deployment.yaml
+          kubectl delete -f pasco-customer-web/deployment.yaml
+          kubectl delete -f pasco-partner-web/deployment.yaml
+          kubectl delete -f pasco-product-web/deployment.yaml
+          kubectl delete -f pasco-subscription-web/deployment.yaml
+          kubectl delete -f service-registry/deployment.yaml
+          kubectl delete -f zipkin/deployment.yaml
+             
+     rules: 
+     - if: ($CI_COMMIT_BRANCH == "docker-in1" && $CI_PIPELINE_SOURCE == "schedule")
+       when: on_success
+
+run-queries-docker-qa:
+  tags:
+    - qa-in1
+  stage: run-queries-docker-qa
+  script:
+    - |
+       cp core/src/main/resources/db-changes.md /home/gitlab-runner/builds/java-yaml/db-scripts/db_queries_new.sql
+       cd /home/gitlab-runner/builds/java-yaml/db-scripts
+       sh run.sh
+       echo "End of the run queries stage" 
+  rules: 
+     - if: ($CI_COMMIT_BRANCH == "docker-in1" && $CI_PIPELINE_SOURCE == "schedule")
+       when: on_success
+
+
+k8s-deploy-qa:
+     variables:
+        GIT_STRATEGY: none
+     tags:
+       - qa-in1
+     stage: k8s-deploy-qa
+     script:
+       - |-
+          sleep 60
+          echo "Zipkin kubernetes implementation DEV"
+          cd /home/gitlab-runner/builds/java-yaml/zipkin
+          kubectl apply -f deployment.yaml
+          sleep 10
+          echo "end"
+          
+          echo "Cloud-config kubernetes implementation DEV"
+          cd //home/gitlab-runner/builds/java-yaml/config-server
+          kubectl apply -f deployment.yaml
+          sleep 10
+          echo "end"
+          
+          echo "Service-Registry kubernetes implementation"
+          cd /home/gitlab-runner/builds/java-yaml/service-registry
+          kubectl apply -f deployment.yaml
+          sleep 2m
+          echo "end"
+          
+          echo "Pasco-product-web kubernetes implementation"
+          cd /home/gitlab-runner/builds/java-yaml/pasco-product-web
+          kubectl apply -f deployment.yaml
+          sleep 20
+          echo "end"
+          
+          echo "Pasco-customer-web kubernetes implementation"
+          cd /home/gitlab-runner/builds/java-yaml/pasco-customer-web
+          kubectl apply -f deployment.yaml
+          echo "end"
+          
+          echo "Pasco-partner-web kubernetes implementation"
+          cd /home/gitlab-runner/builds/java-yaml/pasco-partner-web
+          kubectl apply -f deployment.yaml
+          echo "end"
+          
+          echo "Pasco-contact-web kubernetes implementation"
+          cd /home/gitlab-runner/builds/java-yaml/pasco-contact-web
+          kubectl apply -f deployment.yaml
+          echo "end"
+          
+          echo "Pasco-subscription-web kubernetes implementation"
+          cd /home/gitlab-runner/builds/java-yaml/pasco-subscription-web
+          kubectl apply -f deployment.yaml
+          echo "end"
+          
+          echo "cloud-gateway kubernetes implementation"
+          cd /home/gitlab-runner/builds/java-yaml/cloud-gateway
+          kubectl apply -f deployment.yaml
+          echo "end"
+          
+          echo "Hystrix-dashboard kubernetes implementation"
+          cd /home/gitlab-runner/builds/java-yaml/hystrix-dashboard
+          kubectl apply -f deployment.yaml
+          echo "end"
+          
+     rules: 
+     - if: ($CI_COMMIT_BRANCH == "docker-in1" && $CI_PIPELINE_SOURCE == "schedule")
+       when: on_success
+
+build-check-qa:
+     variables:
+        GIT_STRATEGY: none
+     tags:
+       - qa-in1
+     stage: build-check-qa
+     script: 
+       - counter=0
+       - sleep 60s
+       - >
+         while [ $counter -lt 6 ]; do
+          response=$(curl -s https://api-gtway.otava.com/service-count)
+          if [ "$response" = "13" ]; then
+            echo "Service count is 7. Proceeding with the pipeline..."
+            echo "success"
+            exit 0  # Exit successfully
+          fi
+          sleep 30  # Wait for 30 seconds before the next iteration
+          counter=$((counter + 1))
+         done
+          echo "java build check failed for docker-dev, failing the pipeline"
+          exit 1
+     rules: 
+     - if: ($CI_COMMIT_BRANCH == "docker-in1" && $CI_PIPELINE_SOURCE == "schedule")
+       when: on_success
+
+
+rollback-if-build-check-failed-qa:
+     variables:
+        GIT_STRATEGY: none
+     tags:
+       - qa-in1
+     stage: rollback-if-build-check-failed-qa
+     script:
+       - |
+          sleep 60s
+          bash /home/gitlab-runner/builds/delete-deploy-java.sh
+          echo "Zipkin kubernetes rollback implementation QA"
+          cd /home/gitlab-runner/builds/java-yaml/zipkin
+          sh rollback.sh
+          sleep 20s
+          echo "end"
+          
+          echo "Cloud-config kubernetes rollback implementation QA"
+          cd /home/gitlab-runner/builds/java-yaml/config-server
+          sh rollback.sh
+          sleep 20s
+          echo "end"
+          
+          echo "Service-Registry kubernetes rollback implementation"
+          cd /home/gitlab-runner/builds/java-yaml/service-registry
+          sh rollback.sh
+          sleep 2m
+          echo "end"
+          
+          echo "Pasco-product-web kubernetes rollback implementation"
+          cd /home/gitlab-runner/builds/java-yaml/pasco-product-web
+          sh rollback.sh
+          sleep 20s
+          echo "end"
+          
+          echo "Pasco-customer-web kubernetes rollback implementation"
+          cd /home/gitlab-runner/builds/java-yaml/pasco-customer-web
+          sh rollback.sh
+          sleep 10s
+          echo "end"
+          
+          echo "Pasco-partner-web kubernetes rollback implementation"
+          cd /home/gitlab-runner/builds/java-yaml/pasco-partner-web
+          sh rollback.sh
+          sleep 5s
+          echo "end"
+          
+          echo "Pasco-contact-web kubernetes rollback implementation"
+          cd /home/gitlab-runner/builds/java-yaml/pasco-contact-web
+          sh rollback.sh
+          sleep 5s
+          echo "end"
+          
+          echo "Pasco-subscription-web kubernetes rollback implementation"
+          cd /home/gitlab-runner/builds/java-yaml/pasco-subscription-web
+          sh rollback.sh
+          sleep 10s
+          echo "end"
+          
+          echo "cloud-gateway kubernetes rollback implementation"
+          cd /home/gitlab-runner/builds/java-yaml/cloud-gateway
+          sh rollback.sh
+          sleep 5s
+          echo "end"
+          
+          echo "Hystrix-dashboard kubernetes rollback implementation"
+          cd /home/gitlab-runner/builds/java-yaml/hystrix-dashboard
+          sh rollback.sh
+          echo "end"
+     rules: 
+     - if: ($CI_COMMIT_BRANCH == "docker-in1" && $CI_PIPELINE_SOURCE == "schedule")
+       when: on_failure
+
+stable-tag-qa:
+          variables:
+             GIT_STRATEGY: none
+          tags:
+           - qa-in1
+          stage: stable-tag-qa
+          script:
+            - |-
+               cp /home/gitlab-runner/builds/JAVAVERSION-QA-OT  /home/gitlab-runner/builds/JAVAVERSION-QA-OT-STABLE     
+          rules: 
+          - if: ($CI_COMMIT_BRANCH == "docker-in1" && $CI_PIPELINE_SOURCE == "schedule")
+            when: on_success
+
+
+build-sonar-in1:
+  tags:
+    - sonar-in1-java
+  stage: build-sonar-in1  # or jelastic/maven:3.6.3-openjdk-17.ea-b16
+  variables:
+    SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"  # Defines the location of the analysis task cache
+    GIT_DEPTH: "0"  # Tells git to fetch all the branches of the project, required by the analysis task
+  cache:
+    key: "${CI_JOB_NAME}"
+    paths:
+      - .sonar/cache
+  script: 
+    - /opt/apache-maven-3.6.3/bin/mvn --version
+    - /opt/apache-maven-3.6.3/bin/mvn verify sonar:sonar
+  allow_failure: true
+  rules: 
+     - if: ($CI_COMMIT_BRANCH == "docker-in1-preprod" && $CI_PIPELINE_SOURCE == "schedule")
+       when: always
+
+maven-verify-scan-in1:
+     variables:
+        GIT_STRATEGY: none
+     tags:
+       - java-in1-preprod
+     stage: maven-verify-scan-in1
+     script:
+       - |-
+          cp /home/gitlab-runner/builds/java-scan.sh .
+          sh java-scan.sh
+          echo "END OF MAVEN VERIFY SCAN STAGE"
+          echo $STAGE      
+     rules: 
+     - if: ($CI_COMMIT_BRANCH == "docker-in1-preprod" && $CI_PIPELINE_SOURCE == "schedule" && $STAGE == "maven-scan-in1")
+       when: always
+
+if-old-commit-docker-preprod:
+  tags:
+    - java-in1-preprod
+  stage: if-old-commit-docker-preprod
+  script:
+    - LAST_SHA=$(curl -s --header "PRIVATE-TOKEN:9RG6-Fw7ottfAzRYBMYY" "https://git.otava.com/api/v4/projects/273/pipelines?ref=docker-in1-preprod&per_page=5&&sort=desc" | jq -c '.[1] | .sha' | sed -e 's/^"//' -e 's/"$//')
+    - LAST_PIPE=$(curl -s --header "PRIVATE-TOKEN:9RG6-Fw7ottfAzRYBMYY" "https://git.otava.com/api/v4/projects/273/pipelines?per_page=1&&sort=desc" | jq -c '.[0] | .id' | sed -e 's/^"//' -e 's/"$//')
+    - echo $LAST_SHA
+    - echo $LAST_PIPE
+    - > 
+      if [ "$LAST_SHA" == "$CI_COMMIT_SHA" ]; then 
+         echo "There are no changes since last run in docker-preprod"
+         curl --request POST --header "PRIVATE-TOKEN:9RG6-Fw7ottfAzRYBMYY" "https://git.otava.com/api/v4/projects/273/pipelines/$LAST_PIPE/cancel"
+      fi
+  rules: 
+     - if: ($CI_COMMIT_BRANCH == "docker-in1-preprod" && $CI_PIPELINE_SOURCE != "schedule")
+       when: always
+
+deleting-image-preprod:
+          variables:
+             GIT_STRATEGY: none
+          tags:
+           - java-in1-preprod
+          stage: deleting-image-preprod
+          script:
+            - |-
+               cd /home/gitlab-runner/builds/docker-scripts
+               bash docker-java-preprod.sh
+          rules: 
+          - if: ($CI_COMMIT_BRANCH == "docker-in1-preprod" && $CI_PIPELINE_SOURCE != "schedule")
+            when: on_success
+
+build-preprod:
+  tags:
+    - java-in1-preprod
+  stage: build-preprod
+  script:
+    - |-
+    
+       #######################################################################################################
+       ###############################Building the Java code preprod##############################################
+       #######################################################################################################
+       ls
+       cp core/src/main/resources/db-changes.md /home/gitlab-runner/builds/java-yaml/db-scripts/db_queries_new.sql
+       echo "Building the Java code" 
+       sed -i "s/^redis.password=.*/redis.password=${REDIS_PASS}/" security/src/main/resources/application-common.properties
+       
+       echo "Building the Java code"
+       
+       sed -i 's+test+sb+g' service-registry/script.sh
+       sed -i 's+test+sb+g' cloud-config-server/script.sh
+       sed -i 's+DEFAULT_ENV=test+DEFAULT_ENV=sb+g' pasco-product-web/script.sh
+       sed -i 's+9199+31599+g' pasco-product-web/src/main/resources/application.properties
+
+       sed -i 's+localhost:8761+ot-service-registry-svc-preprod:8761+g' pasco-product-web/src/main/resources/application.properties
+       sed -i 's+localhost:8761+ot-service-registry-svc-preprod:8761+g' pasco-contact-web/src/main/resources/application.properties
+       sed -i 's+localhost:8761+ot-service-registry-svc-preprod:8761+g' pasco-customer-web/src/main/resources/application.properties
+       sed -i 's+localhost:8761+ot-service-registry-svc-preprod:8761+g' pasco-partner-web/src/main/resources/application.properties
+       sed -i 's+localhost:8761+ot-service-registry-svc-preprod:8761+g' pasco-subscription-web/src/main/resources/application.properties
+
+       sed -i 's+localhost+ot-pasco-product-web-svc-preprod+g' pasco-product-web/src/main/resources/application.properties
+       sed -i 's+localhost+ot-java-pasco-contact-web-svc-preprod+g' pasco-contact-web/src/main/resources/application.properties
+       sed -i 's+localhost+ot-pasco-customer-web-svc-preprod+g' pasco-customer-web/src/main/resources/application.properties
+       sed -i 's+localhost+ot-pasco-partner-web-svc-preprod+g' pasco-partner-web/src/main/resources/application.properties
+       sed -i 's+localhost+ot-pasco-subscription-web-svc-preprod+g' pasco-subscription-web/src/main/resources/application.properties
+       
+       sed -i 's+DEFAULT_ENV=test+DEFAULT_ENV=sb+g' pasco-contact-web/script.sh
+       sed -i 's+9196+31596+g' pasco-contact-web/src/main/resources/application.properties
+       
+       sed -i 's+DEFAULT_ENV=test+DEFAULT_ENV=preprod+g' pasco-customer-web/script.sh
+       sed -i 's+9197+31597+g' pasco-customer-web/src/main/resources/application.properties
+       
+       sed -i 's+DEFAULT_ENV=test+DEFAULT_ENV=preprod+g' pasco-partner-web/script.sh
+       sed -i 's+9198+31598+g' pasco-partner-web/src/main/resources/application.properties
+       
+       sed -i 's+DEFAULT_ENV=test+DEFAULT_ENV=preprod+g' cloud-gateway/script.sh
+       
+       ################################################################
+       
+       sed -i 's+main+docker-in1-preprod+g' cloud-config-server/src/main/resources/application.yml
+       sed -i 's+8761+8761+g' cloud-config-server/src/main/resources/application.yml
+       sed -i 's+pchandra+devteam+g' cloud-config-server/src/main/resources/application.yml
+       sed -i 's+rq-T1V-k2yLHGDBngMxT+3dbChxwc4R3_jrTqoyFw+g' cloud-config-server/src/main/resources/application.yml
+       sed -i 's+localhost+ot-service-registry-svc-preprod+g' cloud-config-server/src/main/resources/application.yml
+       sed -i 's+127.0.0.1+ot-service-registry-svc-preprod+g' cloud-config-server/src/main/resources/application.yml
+       
+       sed -i 's+localhost+ot-java-config-server-svc-preprod+g' cloud-gateway/src/main/resources/bootstrap.yml
+       sed -i 's+9296+9296+g' cloud-gateway/src/main/resources/bootstrap.yml
+       sed -i 's+main+docker-preprod+g' cloud-gateway/src/main/resources/bootstrap.yml
+       
+       sed -i 's+localhost+ot-java-config-server-svc-preprod+g' hystrix-dashboard/src/main/resources/bootstrap.yml
+       sed -i 's+9296+9296+g' hystrix-dashboard/src/main/resources/bootstrap.yml
+       sed -i 's+main+docker-in1-preprod+g' hystrix-dashboard/src/main/resources/bootstrap.yml
+       
+       sed -i 's+9199+31599+g' pasco-product-web/src/main/resources/application.properties
+       sed -i 's+test+sb+g' pasco-product-web/src/main/resources/application.properties
+       
+       sed -i 's+9196+31596+g' pasco-contact-web/src/main/resources/application.properties
+       sed -i 's+test+sb+g' pasco-contact-web/src/main/resources/application.properties
+       
+       sed -i 's+9197+31597+g' pasco-customer-web/src/main/resources/application.properties
+       sed -i 's+test+sb+g' pasco-customer-web/src/main/resources/application.properties
+       
+       sed -i 's+9198+31598+g' pasco-partner-web/src/main/resources/application.properties
+       sed -i 's+test+sb+g' pasco-partner-web/src/main/resources/application.properties
+       sed -i 's+9193+31593+g' pasco-subscription-web/src/main/resources/application.properties
+       
+       ###########################################################################
+       JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+       MAVEN_SKIP_RC=true
+       echo $JAVA_HOME
+       java -version
+       mkdir -p ~/.m2/repository/com/connectwise/manage/connectwise-sdk/2024.1
+       cp connectwise-sdk-2024.1.jar ~/.m2/repository/com/connectwise/manage/connectwise-sdk/2024.1
+       #mvn test
+       mvn clean package -Dmaven.test.skip
+
+       #######################################################################################################
+       ######################Zipkin docker image creation preprod#################################################
+       #######################################################################################################
+       
+       echo "Zipkin docker image creation preprod"
+       cd zipkin
+       
+       destdir=../../../../../JAVAVERSION-PREPROD-OT
+       value=`cat ../../../../../JAVAVERSION-PREPROD-OT`
+       NEXTVERSION=$(echo ${value} | awk -F. -v OFS=. '{$NF += 1 ; print}')
+       echo "${NEXTVERSION}"
+       echo "${NEXTVERSION}" > "$destdir"
+       echo "HAHAHAHAHAHAHAHA"
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=preprod-java-zipkin
+       docker build -t newcloudnetworks/java-preprod-zipkin:ot-latest -t newcloudnetworks/java-preprod-zipkin:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/preprod-java-zipkin:latest newcloudnetworks/preprod-java-zipkin:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/preprod-java-zipkin:latest newcloudnetworks/preprod-java-zipkin:ot-latest
+       #dockerhub cred
+       #docker login --username=$DOCKER_USER_NAME -p=$DOCKER_PASSWORD
+       
+       #######################################################################################################
+       ##########Creating docker image for service-registry preprod###############################################
+       #######################################################################################################
+       
+       echo "Creating docker image for service-registry preprod"
+       cd ../service-registry
+       
+       sed -i 's+test+sb+g' script.sh
+       
+       destdir=../../../../../JAVAVERSION-PREPROD-OT
+       value=`cat ../../../../../JAVAVERSION-PREPROD-OT`
+       NEXTVERSION=${value}
+       echo "${NEXTVERSION}"
+       #echo "${NEXTVERSION}" > "$destdir"
+       
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=preprod-java-registry
+       
+       docker build -t newcloudnetworks/java-preprod-registry:ot-latest -t newcloudnetworks/java-preprod-registry:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/preprod-java-registry:latest newcloudnetworks/preprod-java-registry:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/preprod-java-registry:latest newcloudnetworks/preprod-java-registry:ot-latest
+       #dockerhub cred
+       #docker login --username=$DOCKER_USER_NAME -p=$DOCKER_PASSWORD
+       
+       
+       #######################################################################################################
+       ##########Cloud-config-server docker image creation preprod###############################################
+       #######################################################################################################
+       
+       echo "Cloud-config-server docker image creation preprod"
+       cd ../cloud-config-server
+       sed -i 's+DEFAULT_ENV=test+DEFAULT_ENV=sb+g' script.sh
+       destdir=../../../../../JAVAVERSION-PREPROD-OT
+       value=`cat ../../../../../JAVAVERSION-PREPROD-OT`
+       NEXTVERSION=${value}
+       
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=preprod-java-config
+       
+       docker build -t newcloudnetworks/java-preprod-config:ot-latest -t newcloudnetworks/java-preprod-config:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/preprod-java-config:latest newcloudnetworks/preprod-java-config:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/preprod-java-config:latest newcloudnetworks/preprod-java-config:ot-latest
+       #dockerhub cred
+       #docker login --username=$DOCKER_USER_NAME -p=$DOCKER_PASSWORD
+      
+       #######################################################################################################
+       ##########Creating pasco-product-web docker image preprod##################################################
+       #######################################################################################################
+       
+       echo "Creating pasco-product-web docker image"
+       cd ../pasco-product-web
+       
+       sed -i 's+DEFAULT_ENV=test+DEFAULT_ENV=sb+g' ./script.sh
+       sed -i 's+9199+31599+g' ./src/main/resources/application.properties
+       
+       destdir=../../../../../JAVAVERSION-PREPROD-OT
+       value=`cat ../../../../../JAVAVERSION-PREPROD-OT`
+       NEXTVERSION=${value}
+       
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=preprod-java-pasco-product-web
+       
+       docker build -t newcloudnetworks/java-preprod-pasco-product-web:ot-latest -t newcloudnetworks/java-preprod-pasco-product-web:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/preprod-java-pasco-product-web:latest newcloudnetworks/preprod-java-pasco-product-web:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/preprod-java-pasco-product-web:latest newcloudnetworks/preprod-java-pasco-product-web:ot-latest
+       #dockerhub cred
+       #docker login --username=$DOCKER_USER_NAME -p=$DOCKER_PASSWORD
+       
+       ######################################################################################################
+       ##########Creating pasco-contact-web docker image preprod#################################################
+       ######################################################################################################
+       
+       echo "Creating pasco-contact-web docker image preprod"
+       
+       cd ../pasco-contact-web
+       sed -i 's+DEFAULT_ENV=test+DEFAULT_ENV=sb+g' script.sh
+       sed -i 's+9196+31596+g' src/main/resources/application.properties
+       destdir=../../../../../JAVAVERSION-PREPROD-OT
+       value=`cat ../../../../../JAVAVERSION-PREPROD-OT`
+       NEXTVERSION=${value}
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=preprod-java-pasco-contact-web
+       
+       docker build -t newcloudnetworks/java-preprod-pasco-contact-web:ot-latest -t newcloudnetworks/java-preprod-pasco-contact-web:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/preprod-java-pasco-contact-web:latest newcloudnetworks/preprod-java-pasco-contact-web:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/preprod-java-pasco-contact-web:latest newcloudnetworks/preprod-java-pasco-contact-web:ot-latest
+       #dockerhub cred
+       #docker login --username=$DOCKER_USER_NAME -p=$DOCKER_PASSWORD
+       
+       ######################################################################################################
+       ########################Pasco-customer-web docker image creation preprod##################################
+       ######################################################################################################
+       
+       echo "Pasco-customer-web docker image creation preprod"
+       
+       cd ../pasco-customer-web
+       sed -i 's+DEFAULT_ENV=test+DEFAULT_ENV=sb+g' script.sh
+       sed -i 's+9197+31597+g' src/main/resources/application.properties
+       destdir=../../../../../JAVAVERSION-PREPROD-OT
+       value=`cat ../../../../../JAVAVERSION-PREPROD-OT`
+       NEXTVERSION=${value}
+       
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=preprod-java-pasco-customer-web
+       
+       docker build -t newcloudnetworks/java-preprod-pasco-customer-web:ot-latest -t newcloudnetworks/java-preprod-pasco-customer-web:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/preprod-java-pasco-customer-web:latest newcloudnetworks/preprod-java-pasco-customer-web:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/preprod-java-pasco-customer-web:latest newcloudnetworks/preprod-java-pasco-customer-web:ot-latest
+       #dockerhub cred
+       #docker login --username=$DOCKER_USER_NAME -p=$DOCKER_PASSWORD
+       
+       ######################################################################################################
+       ########################Pasco-partner-web docker image creation preprod###################################
+       ######################################################################################################
+       
+       echo "Pasco-partner-web docker image creation preprod"
+       
+       cd ../pasco-partner-web
+       sed -i 's+DEFAULT_ENV=test+DEFAULT_ENV=sb+g' script.sh
+       sed -i 's+9198+31598+g' src/main/resources/application.properties
+       
+       destdir=../../../../../JAVAVERSION-PREPROD-OT
+       value=`cat ../../../../../JAVAVERSION-PREPROD-OT`
+       NEXTVERSION=${value}
+       
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=preprod-java-pasco-partner-web
+       
+       docker build -t newcloudnetworks/java-preprod-pasco-partner-web:ot-latest -t newcloudnetworks/java-preprod-pasco-partner-web:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/preprod-java-pasco-partner-web:latest newcloudnetworks/preprod-java-pasco-partner-web:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/preprod-java-pasco-partner-web:latest newcloudnetworks/preprod-java-pasco-partner-web:ot-latest
+       #dockerhub cred
+       #docker login --username=$DOCKER_USER_NAME -p=$DOCKER_PASSWORD
+       
+       ######################################################################################################
+       ########################Creating pasco-subscription-web docker image preprod###################################
+       ######################################################################################################
+       
+       echo "Creating pasco-subscription-web docker image preprod"
+       
+       cd ../pasco-subscription-web
+       sed -i 's+DEFAULT_ENV=test+DEFAULT_ENV=sb+g' script.sh
+       sed -i 's+9193+31593+g' src/main/resources/application.properties
+       
+       destdir=../../../../../JAVAVERSION-PREPROD-OT
+       value=`cat ../../../../../JAVAVERSION-PREPROD-OT`
+       NEXTVERSION=${value}
+       
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=preprod-java-pasco-subscription-web
+       
+       docker build -t newcloudnetworks/java-preprod-pasco-subscription-web:ot-latest -t newcloudnetworks/java-preprod-pasco-subscription-web:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/preprod-java-pasco-subscription-web:latest newcloudnetworks/preprod-java-pasco-subscription-web:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/preprod-java-pasco-subscription-web:latest newcloudnetworks/preprod-java-pasco-subscription-web:ot-latest
+       #dockerhub cred
+       #docker login --username=$DOCKER_USER_NAME -p=$DOCKER_PASSWORD
+       
+       ######################################################################################################
+       ########################Creating cloud-gateway docker image creation preprod###################################
+       ######################################################################################################
+       
+       echo "Creating cloud-gateway docker image creation preprod"
+       
+       cd ../cloud-gateway
+       sed -i 's+DEFAULT_ENV=test+DEFAULT_ENV=sb+g' script.sh
+       destdir=../../../../../JAVAVERSION-PREPROD-OT
+       value=`cat ../../../../../JAVAVERSION-PREPROD-OT`
+       NEXTVERSION=${value}
+       
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=preprod-java-cloud-gateway
+       
+       docker build -t newcloudnetworks/java-preprod-cloud-gateway:ot-latest -t newcloudnetworks/java-preprod-cloud-gateway:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/preprod-java-cloud-gateway:latest newcloudnetworks/preprod-java-cloud-gateway:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/preprod-java-cloud-gateway:latest newcloudnetworks/preprod-java-cloud-gateway:ot-latest
+       #dockerhub cred
+       #docker login --username=$DOCKER_USER_NAME -p=$DOCKER_PASSWORD
+       
+       ######################################################################################################
+       ########################hystrix-dashboard docker image creation preprod###################################
+       ######################################################################################################
+       
+       echo "hystrix-dashboard docker image creation preprod"
+       
+       cd ../hystrix-dashboard
+       sed -i 's+DEFAULT_ENV=test+DEFAULT_ENV=sb+g' script.sh
+       destdir=../../../../../JAVAVERSION-PREPROD-OT
+       value=`cat ../../../../../JAVAVERSION-PREPROD-OT`
+       NEXTVERSION=${value}
+       
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=preprod-java-hystrix-dashboard
+       
+       docker build -t newcloudnetworks/java-preprod-hystrix-dashboard:ot-latest -t newcloudnetworks/java-preprod-hystrix-dashboard:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/preprod-java-hystrix-dashboard:latest newcloudnetworks/preprod-java-hystrix-dashboard:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/preprod-java-hystrix-dashboard:latest newcloudnetworks/preprod-java-hystrix-dashboard:ot-latest
+       #dockerhub cred
+       echo "$DOCKER_PASSWORD" | docker login --username $DOCKER_USER_NAME --password-stdin
+       # push it
+       docker push newcloudnetworks/java-preprod-zipkin:ot-latest
+       docker push newcloudnetworks/java-preprod-zipkin:ot-$NEXTVERSION 
+       # push it
+       docker push newcloudnetworks/java-preprod-registry:ot-latest
+       docker push newcloudnetworks/java-preprod-registry:ot-$NEXTVERSION
+       # push it
+       docker push newcloudnetworks/java-preprod-config:ot-latest
+       docker push newcloudnetworks/java-preprod-config:ot-$NEXTVERSION
+       # push it
+       docker push newcloudnetworks/java-preprod-pasco-product-web:ot-latest
+       docker push newcloudnetworks/java-preprod-pasco-product-web:ot-$NEXTVERSION
+       # push it
+       docker push newcloudnetworks/java-preprod-pasco-contact-web:ot-latest
+       docker push newcloudnetworks/java-preprod-pasco-contact-web:ot-$NEXTVERSION
+       # push it
+       docker push newcloudnetworks/java-preprod-pasco-customer-web:ot-latest
+       docker push newcloudnetworks/java-preprod-pasco-customer-web:ot-$NEXTVERSION
+       # push it
+       docker push newcloudnetworks/java-preprod-pasco-partner-web:ot-latest
+       docker push newcloudnetworks/java-preprod-pasco-partner-web:ot-$NEXTVERSION
+       # push it
+       docker push newcloudnetworks/java-preprod-pasco-subscription-web:ot-latest
+       docker push newcloudnetworks/java-preprod-pasco-subscription-web:ot-$NEXTVERSION
+       # push it
+       docker push newcloudnetworks/java-preprod-cloud-gateway:ot-latest
+       docker push newcloudnetworks/java-preprod-cloud-gateway:ot-$NEXTVERSION
+       # push it
+       docker push newcloudnetworks/java-preprod-hystrix-dashboard:ot-latest
+       docker push newcloudnetworks/java-preprod-hystrix-dashboard:ot-$NEXTVERSION
+       
+       
+       #cd /home/gitlab-runner/builds/Wj22B-Gd/0/otportal-platform
+       #cd /home/gitlab-runner/builds/eL5_uGRS/0/otportal-platform
+       #rm -rf ocp-java
+       
+  rules: 
+     - if: ($CI_COMMIT_BRANCH == "docker-in1-preprod" && $CI_PIPELINE_SOURCE != "schedule")
+       when: always
+
+k8s-delete-preprod:
+     variables:
+        GIT_STRATEGY: none
+     tags:
+       - java-in1-preprod
+     stage: k8s-delete-preprod
+     script:
+       - |-
+          bash /home/gitlab-runner/builds/delete-deploy-java.sh            
+     rules: 
+     - if: ($CI_COMMIT_BRANCH == "docker-in1-preprod" && $CI_PIPELINE_SOURCE != "schedule")
+       when: on_success
+
+run-queries-docker-preprod:
+  tags:
+    - java-in1-preprod
+  stage: run-queries-docker-preprod
+  script:
+    - |
+       cd /home/gitlab-runner/builds/java-yaml/db-scripts
+       sh run.sh
+       echo "End of the run queries stage"
+  rules: 
+     - if: ($CI_COMMIT_BRANCH == "docker-in1-preprod" && $CI_PIPELINE_SOURCE != "schedule")
+       when: on_success
+
+k8s-deploy-preprod:
+     variables:
+        GIT_STRATEGY: none
+     tags:
+       - java-in1-preprod
+     stage: k8s-deploy-preprod
+     script:
+       - |-
+          sleep 60
+          echo "Zipkin kubernetes implementation preprod"
+          cd /home/gitlab-runner/builds/java-yaml/zipkin
+          kubectl apply -f deployment.yaml
+          sleep 10
+          echo "end"
+          
+          echo "Cloud-config kubernetes implementation preprod"
+          cd //home/gitlab-runner/builds/java-yaml/config-server
+          kubectl apply -f deployment.yaml
+          sleep 10
+          echo "end"
+          
+          echo "Service-Registry kubernetes implementation"
+          cd /home/gitlab-runner/builds/java-yaml/service-registry
+          kubectl apply -f deployment.yaml
+          sleep 2m
+          echo "end"
+          
+          echo "Pasco-product-web kubernetes implementation"
+          cd /home/gitlab-runner/builds/java-yaml/pasco-product-web
+          kubectl apply -f deployment.yaml
+          sleep 20
+          echo "end"
+          
+          echo "Pasco-customer-web kubernetes implementation"
+          cd /home/gitlab-runner/builds/java-yaml/pasco-customer-web
+          kubectl apply -f deployment.yaml
+          echo "end"
+          
+          echo "Pasco-partner-web kubernetes implementation"
+          cd /home/gitlab-runner/builds/java-yaml/pasco-partner-web
+          kubectl apply -f deployment.yaml
+          echo "end"
+          
+          echo "Pasco-contact-web kubernetes implementation"
+          cd /home/gitlab-runner/builds/java-yaml/pasco-contact-web
+          kubectl apply -f deployment.yaml
+          echo "end"
+          
+          echo "Pasco-subscription-web kubernetes implementation"
+          cd /home/gitlab-runner/builds/java-yaml/pasco-subscription-web
+          kubectl apply -f deployment.yaml
+          echo "end"
+          
+          echo "cloud-gateway kubernetes implementation"
+          cd /home/gitlab-runner/builds/java-yaml/cloud-gateway
+          kubectl apply -f deployment.yaml
+          echo "end"
+          
+          echo "Hystrix-dashboard kubernetes implementation"
+          cd /home/gitlab-runner/builds/java-yaml/hystrix-dashboard
+          kubectl apply -f deployment.yaml
+          echo "end"
+          
+     rules: 
+     - if: ($CI_COMMIT_BRANCH == "docker-in1-preprod" && $CI_PIPELINE_SOURCE != "schedule")
+       when: on_success
+
+build-check-preprod:
+     variables:
+        GIT_STRATEGY: none
+     tags:
+       - java-in1-preprod
+     stage: build-check-preprod
+     script: 
+       - counter=0
+       - sleep 120s
+       - >
+         while [ $counter -lt 6 ]; do
+          response=$(curl -s http://216.71.167.193/service-count)
+          if [ "$response" = "13" ]; then
+            echo "Service count is 7. Proceeding with the pipeline..."
+            echo "success"
+            exit 0  # Exit successfully
+          fi
+          sleep 30  # Wait for 30 seconds before the next iteration
+          counter=$((counter + 1))
+         done
+          echo "java build check failed for docker-preprod, failing the pipeline"
+          exit 1
+     rules: 
+     - if: ($CI_COMMIT_BRANCH == "docker-in1-preprod" && $CI_PIPELINE_SOURCE != "schedule")
+       when: on_success
+
+
+rollback-if-build-check-failed-preprod:
+     variables:
+        GIT_STRATEGY: none
+     tags:
+       - java-in1-preprod
+     stage: rollback-if-build-check-failed-preprod
+     script:
+       - |
+          sleep 60s
+          bash /home/gitlab-runner/builds/delete-deploy-java.sh
+          echo "Zipkin kubernetes rollback implementation preprod"
+          cd /home/gitlab-runner/builds/java-yaml/zipkin
+          sh rollback.sh
+          sleep 20s
+          echo "end"
+          
+          echo "Cloud-config kubernetes rollback implementation preprod"
+          cd /home/gitlab-runner/builds/java-yaml/config-server
+          sh rollback.sh
+          sleep 20s
+          echo "end"
+          
+          echo "Service-Registry kubernetes rollback implementation"
+          cd /home/gitlab-runner/builds/java-yaml/service-registry
+          sh rollback.sh
+          sleep 2m
+          echo "end"
+          
+          echo "Pasco-product-web kubernetes rollback implementation"
+          cd /home/gitlab-runner/builds/java-yaml/pasco-product-web
+          sh rollback.sh
+          sleep 20s
+          echo "end"
+          
+          echo "Pasco-customer-web kubernetes rollback implementation"
+          cd /home/gitlab-runner/builds/java-yaml/pasco-customer-web
+          sh rollback.sh
+          sleep 10s
+          echo "end"
+          
+          echo "Pasco-partner-web kubernetes rollback implementation"
+          cd /home/gitlab-runner/builds/java-yaml/pasco-partner-web
+          sh rollback.sh
+          sleep 5s
+          echo "end"
+          
+          echo "Pasco-contact-web kubernetes rollback implementation"
+          cd /home/gitlab-runner/builds/java-yaml/pasco-contact-web
+          sh rollback.sh
+          sleep 5s
+          echo "end"
+          
+          echo "Pasco-subscription-web kubernetes rollback implementation"
+          cd /home/gitlab-runner/builds/java-yaml/pasco-subscription-web
+          sh rollback.sh
+          sleep 10s
+          echo "end"
+          
+          echo "cloud-gateway kubernetes rollback implementation"
+          cd /home/gitlab-runner/builds/java-yaml/cloud-gateway
+          sh rollback.sh
+          sleep 5s
+          echo "end"
+          
+          echo "Hystrix-dashboard kubernetes rollback implementation"
+          cd /home/gitlab-runner/builds/java-yaml/hystrix-dashboard
+          sh rollback.sh
+          echo "end"
+     rules: 
+     - if: ($CI_COMMIT_BRANCH == "docker-in1-preprod" && $CI_PIPELINE_SOURCE != "schedule")
+       when: on_failure
+
+stable-tag-preprod:
+          variables:
+             GIT_STRATEGY: none
+          tags:
+           - java-in1-preprod
+          stage: stable-tag-preprod
+          script:
+            - |-
+               cp /home/gitlab-runner/builds/JAVAVERSION-PREPROD-OT /home/gitlab-runner/builds/JAVAVERSION-PREPROD-OT-STABLE
+          rules: 
+          - if: ($CI_COMMIT_BRANCH == "docker-in1-preprod" && $CI_PIPELINE_SOURCE != "schedule")
+            when: on_success
+
+
+if-old-commit-docker-prod:
+  tags:
+    - java-in1-prod
+  stage: if-old-commit-docker-prod
+  script:
+    - LAST_SHA=$(curl -s --header "PRIVATE-TOKEN:9RG6-Fw7ottfAzRYBMYY" "https://git.otava.com/api/v4/projects/273/pipelines?ref=production-in1&per_page=5&&sort=desc" | jq -c '.[1] | .sha' | sed -e 's/^"//' -e 's/"$//')
+    - LAST_PIPE=$(curl -s --header "PRIVATE-TOKEN:9RG6-Fw7ottfAzRYBMYY" "https://git.otava.com/api/v4/projects/273/pipelines?per_page=1&&sort=desc" | jq -c '.[0] | .id' | sed -e 's/^"//' -e 's/"$//')
+    - echo $LAST_SHA
+    - echo $LAST_PIPE
+    - > 
+      if [ "$LAST_SHA" == "$CI_COMMIT_SHA" ]; then 
+         echo "There are no changes since last run in docker-prod"
+         curl --request POST --header "PRIVATE-TOKEN:9RG6-Fw7ottfAzRYBMYY" "https://git.otava.com/api/v4/projects/273/pipelines/$LAST_PIPE/cancel"
+      fi
+  rules: 
+     - if: ($CI_COMMIT_BRANCH == "production-in1")
+       when: always
+       
+k8s-delete-prod:
+     variables:
+        GIT_STRATEGY: none
+     tags:
+       - java-in1-prod
+     stage: k8s-delete-prod
+     script:
+       - |-
+          cd /home/gitlab-runner/builds/java-yaml
+          kubectl delete -f cloud-gateway/deployment.yaml
+          kubectl delete -f config-server/deployment.yaml
+          kubectl delete -f hystrix-dashboard/deployment.yaml
+          kubectl delete -f pasco-contact-web/deployment.yaml
+          kubectl delete -f pasco-customer-web/deployment.yaml
+          kubectl delete -f pasco-partner-web/deployment.yaml
+          kubectl delete -f pasco-product-web/deployment.yaml
+          kubectl delete -f pasco-subscription-web/deployment.yaml
+          kubectl delete -f service-registry/deployment.yaml
+          kubectl delete -f zipkin/deployment.yaml
+             
+     rules: 
+     - if: ($CI_COMMIT_BRANCH == "production-in1")
+       when: on_success
+
+run-queries-docker-prod:
+  tags:
+    - java-in1-prod
+  stage: run-queries-docker-prod
+  script:
+    - |
+       cd /home/gitlab-runner/builds/java-yaml/db-scripts
+       sh run.sh
+       echo "End of the run queries stage"
+  rules: 
+     - if: ($CI_COMMIT_BRANCH == "production-in1" && $CI_PIPELINE_SOURCE != "schedule")
+       when: on_success
+
+k8s-deploy-prod:
+     variables:
+        GIT_STRATEGY: none
+     tags:
+       - java-in1-prod
+     stage: k8s-deploy-prod
+     script:
+       - |-
+          sleep 60
+          echo "Zipkin kubernetes implementation prod"
+          cd /home/gitlab-runner/builds/java-yaml/zipkin
+          kubectl apply -f deployment.yaml
+          sleep 10
+          echo "end"
+          
+          echo "Cloud-config kubernetes implementation prod"
+          cd //home/gitlab-runner/builds/java-yaml/config-server
+          kubectl apply -f deployment.yaml
+          sleep 10
+          echo "end"
+          
+          echo "Service-Registry kubernetes implementation"
+          cd /home/gitlab-runner/builds/java-yaml/service-registry
+          kubectl apply -f deployment.yaml
+          sleep 2m
+          echo "end"
+          
+          echo "Pasco-product-web kubernetes implementation"
+          cd /home/gitlab-runner/builds/java-yaml/pasco-product-web
+          kubectl apply -f deployment.yaml
+          sleep 20
+          echo "end"
+          
+          echo "Pasco-customer-web kubernetes implementation"
+          cd /home/gitlab-runner/builds/java-yaml/pasco-customer-web
+          kubectl apply -f deployment.yaml
+          echo "end"
+          
+          echo "Pasco-partner-web kubernetes implementation"
+          cd /home/gitlab-runner/builds/java-yaml/pasco-partner-web
+          kubectl apply -f deployment.yaml
+          echo "end"
+          
+          echo "Pasco-contact-web kubernetes implementation"
+          cd /home/gitlab-runner/builds/java-yaml/pasco-contact-web
+          kubectl apply -f deployment.yaml
+          echo "end"
+          
+          echo "Pasco-subscription-web kubernetes implementation"
+          cd /home/gitlab-runner/builds/java-yaml/pasco-subscription-web
+          kubectl apply -f deployment.yaml
+          echo "end"
+          
+          echo "cloud-gateway kubernetes implementation"
+          cd /home/gitlab-runner/builds/java-yaml/cloud-gateway
+          kubectl apply -f deployment.yaml
+          echo "end"
+          
+          echo "Hystrix-dashboard kubernetes implementation"
+          cd /home/gitlab-runner/builds/java-yaml/hystrix-dashboard
+          kubectl apply -f deployment.yaml
+          echo "end"
+          
+     rules: 
+     - if: $CI_COMMIT_BRANCH == "production-in1"
+       when: on_success
+
+build-check-prod:
+     variables:
+        GIT_STRATEGY: none
+     tags:
+       - java-in1-prod
+     stage: build-check-prod
+     script: 
+       - counter=0
+       - sleep 120s
+       - >
+         while [ $counter -lt 6 ]; do
+          response=$(curl -s http://216.71.167.183/service-count)
+          if [ "$response" = "13" ]; then
+            echo "Service count is 7. Proceeding with the pipeline..."
+            echo "success"
+            exit 0  # Exit successfully
+          fi
+          sleep 30  # Wait for 30 seconds before the next iteration
+          counter=$((counter + 1))
+         done
+          echo "java build check failed for docker-prod, failing the pipeline"
+          exit 1
+     rules: 
+     - if: $CI_COMMIT_BRANCH == "production-in1"
+       when: on_success
+
+
+rollback-if-build-check-failed-prod:
+     variables:
+        GIT_STRATEGY: none
+     tags:
+       - java-in1-prod
+     stage: rollback-if-build-check-failed-prod
+     script:
+       - |
+          sleep 60s
+          bash /home/gitlab-runner/builds/delete-deploy-java.sh
+          echo "Zipkin kubernetes rollback implementation prod"
+          cd /home/gitlab-runner/builds/java-yaml/zipkin
+          sh rollback.sh
+          sleep 20s
+          echo "end"
+          
+          echo "Cloud-config kubernetes rollback implementation prod"
+          cd /home/gitlab-runner/builds/java-yaml/config-server
+          sh rollback.sh
+          sleep 20s
+          echo "end"
+          
+          echo "Service-Registry kubernetes rollback implementation"
+          cd /home/gitlab-runner/builds/java-yaml/service-registry
+          sh rollback.sh
+          sleep 2m
+          echo "end"
+          
+          echo "Pasco-product-web kubernetes rollback implementation"
+          cd /home/gitlab-runner/builds/java-yaml/pasco-product-web
+          sh rollback.sh
+          sleep 20s
+          echo "end"
+          
+          echo "Pasco-customer-web kubernetes rollback implementation"
+          cd /home/gitlab-runner/builds/java-yaml/pasco-customer-web
+          sh rollback.sh
+          sleep 10s
+          echo "end"
+          
+          echo "Pasco-partner-web kubernetes rollback implementation"
+          cd /home/gitlab-runner/builds/java-yaml/pasco-partner-web
+          sh rollback.sh
+          sleep 5s
+          echo "end"
+          
+          echo "Pasco-contact-web kubernetes rollback implementation"
+          cd /home/gitlab-runner/builds/java-yaml/pasco-contact-web
+          sh rollback.sh
+          sleep 5s
+          echo "end"
+          
+          echo "Pasco-subscription-web kubernetes rollback implementation"
+          cd /home/gitlab-runner/builds/java-yaml/pasco-subscription-web
+          sh rollback.sh
+          sleep 10s
+          echo "end"
+          
+          echo "cloud-gateway kubernetes rollback implementation"
+          cd /home/gitlab-runner/builds/java-yaml/cloud-gateway
+          sh rollback.sh
+          sleep 5s
+          echo "end"
+          
+          echo "Hystrix-dashboard kubernetes rollback implementation"
+          cd /home/gitlab-runner/builds/java-yaml/hystrix-dashboard
+          sh rollback.sh
+          echo "end"
+     rules: 
+     - if: $CI_COMMIT_BRANCH == "production-in1"
+       when: on_failure
+
+deleting-image-prod:
+          variables:
+             GIT_STRATEGY: none
+          tags:
+           - java-in1-prod
+          stage: deleting-image-prod
+          script:
+            - |-
+      
+               #cp /home/gitlab-runner/builds/JAVAVERSION-prod-OT /home/gitlab-runner/builds/JAVAVERSION-prod-OT-STABLE
+               cd /home/gitlab-runner/builds/docker-scripts
+               bash docker-java-prod.sh
+          rules: 
+          - if: ($CI_COMMIT_BRANCH == "production-in1")
+            when: on_success

@@ -1,0 +1,12 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: reports-excel
+  namespace: dev
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: reports-excel
+  resources:
+    requests:
+      storage: 1Gi

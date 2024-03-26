@@ -1,0 +1,13 @@
+
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: emailattachsubscription-dev0
+  namespace: dev
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: emailattachsubscription-dev0
+  resources:
+    requests:
+      storage: 1Gi

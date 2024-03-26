@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+ name: ot-java-cloud-gateway-svc-dev
+ namespace: dev
+ labels:
+   app: java-cloud-gateway-dev
+spec:
+ type: LoadBalancer
+ ports:
+ - name: http
+   protocol: TCP
+   port: 80
+   targetPort: 9195
+ selector:
+   app: java-cloud-gateway-dev

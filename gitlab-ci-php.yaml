@@ -1,0 +1,1280 @@
+stages: 
+  - if-old-commit-tanzu-dev
+  - deleting-image-dev
+  - ot-build-dev
+  - k8s-delete-dev
+  - k8s-deploy-dev
+  - check-build-dev
+  - rollback-dev
+  - stable-tag-dev
+  - if-old-commit-tanzu-qa
+  - deleting-image-qa
+  - ot-build-qa
+  - k8s-delete-qa
+  - run-queries-qa
+  - k8s-deploy-qa
+  - check-build-qa
+  - rollback-qa
+  - stable-tag-qa
+  - build-sonar-in1
+  - composer-scan
+  - if-old-commit-tanzu-preprod
+  - deleting-image-preprod
+  - ot-build-preprod
+  - k8s-delete-preprod
+  - run-queries-docker-preprod
+  - k8s-deploy-preprod
+  - check-build-preprod
+  - rollback-preprod
+  - stable-tag-preprod
+  - if-old-commit-tanzu-prod
+  - k8s-delete-prod
+  - run-queries-docker-prod
+  - k8s-deploy-prod
+  - check-build-prod
+  - rollback-prod
+  - deleting-image-prod 
+
+
+if-old-commit-tanzu-dev:
+  tags:
+    - dev-tanzu-php
+  stage: if-old-commit-tanzu-dev
+  script:
+    - LAST_SHA=$(curl -s --header "PRIVATE-TOKEN:9RG6-Fw7ottfAzRYBMYY" "https://git.otava.com/api/v4/projects/274/pipelines?ref=in1-docker-dev&per_page=5&&sort=desc" | jq -c '.[1] | .sha' | sed -e 's/^"//' -e 's/"$//')
+    - LAST_PIPE=$(curl -s --header "PRIVATE-TOKEN:9RG6-Fw7ottfAzRYBMYY" "https://git.otava.com/api/v4/projects/274/pipelines?per_page=1&&sort=desc" | jq -c '.[0] | .id' | sed -e 's/^"//' -e 's/"$//')
+    - echo $LAST_SHA
+    - echo $LAST_PIPE
+    - echo $CI_COMMIT_SHA
+    - > 
+      if [ "$LAST_SHA" == "$CI_COMMIT_SHA" ]; then 
+         echo "There are no changes since last run"
+         curl --request POST --header "PRIVATE-TOKEN:9RG6-Fw7ottfAzRYBMYY" "https://git.otava.com/api/v4/projects/274/pipelines/$LAST_PIPE/cancel"
+      fi
+  rules: 
+     - if: $CI_COMMIT_BRANCH == "in1-docker-dev"
+       when: always
+
+deleting-image-dev:
+          variables:
+             GIT_STRATEGY: none
+          tags:
+           - dev-tanzu-php
+          stage: deleting-image-dev
+          script:
+            - |-
+               cd /home/gitlab-runner/builds/docker-scripts
+               bash docker-dev-php.sh
+          rules: 
+          - if: ($CI_COMMIT_BRANCH == "in1-docker-dev")
+            when: on_success
+
+ot-build-dev:
+  tags:
+    - dev-tanzu-php
+  stage: ot-build-dev
+  script:
+    - |-
+
+       ######################################################################################################
+       ##########Creating docker image for entity-management-service DEV#####################################
+       #####################################################################################################
+
+       echo "Creating docker image for entity-management-service DEV"
+       cd entity-management-service
+       sed -i "s/^DB_USERNAME=.*/DB_USERNAME=${IN1_DB_USERNAME}/" env-dev
+       sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=\"${IN1_DB_PASSWORD}\"/" env-dev
+       sed -i "s/^REDIS_PASSWORD=.*/REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-dev
+       sed -i "s/^PROMETHEUS_REDIS_PASSWORD=.*/PROMETHEUS_REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-dev
+       sed -i 's/APP_NAME=Pasco-cPanel/APP_NAME=Pasco-dev/g' env-dev
+       cp env-dev .env
+       destdir=../../../../../PHPVERSION-DEV-OT
+       value=`cat ../../../../../PHPVERSION-DEV-OT`
+       NEXTVERSION=$(echo ${value} | awk -F. -v OFS=. '{$NF += 1 ; print}')
+       echo "${NEXTVERSION}"
+       echo "${NEXTVERSION}" > "$destdir"
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       #USERNAME=newcloudnetworks
+       # image name
+       #IMAGE=dev-entity-management
+       docker build -t newcloudnetworks/php-dev-entity-management:ot-latest -t newcloudnetworks/php-dev-entity-management:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/dev-entity-management:latest newcloudnetworks/dev-entity-management:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/dev-entity-management:latest newcloudnetworks/dev-entity-management:ot-latest
+       #dockerhub cred
+       echo "$DOCKER_PASSWORD" | docker login --username $DOCKER_USER_NAME --password-stdin
+       # push it
+       docker push newcloudnetworks/php-dev-entity-management:ot-latest
+       docker push newcloudnetworks/php-dev-entity-management:ot-$NEXTVERSION
+
+       #######################################################################################################
+       ##########Creating docker image for reports-service DEV#################################################
+       #######################################################################################################
+
+       echo "Creating docker image for reports-service DEV"
+       cd ../reports-service
+      
+       sed -i "s/^DB_USERNAME=.*/DB_USERNAME=${IN1_DB_USERNAME}/" env-dev
+       sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=\"${IN1_DB_PASSWORD}\"/" env-dev
+       sed -i "s/^REDIS_PASSWORD=.*/REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-dev
+       sed -i "s/^redis.password=.*/redis.password=\"${REDIS_PASS}\"/" env-dev
+       sed -i 's/APP_NAME=Pasco-cPanel/APP_NAME=Pasco-dev/g' env-dev
+       cp env-dev .env
+       destdir=../../../../../PHPVERSION-DEV-OT
+       value=`cat ../../../../../PHPVERSION-DEV-OT`
+       NEXTVERSION=${value}
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       #USERNAME=newcloudnetworks
+       # image name
+       #IMAGE=dev-reports-service
+       docker build -t newcloudnetworks/php-dev-reports-service:ot-latest -t newcloudnetworks/php-dev-reports-service:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/dev-reports-service:latest newcloudnetworks/dev-reports-service:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/dev-reports-service:latest newcloudnetworks/dev-reports-service:ot-latest
+       #dockerhub cred
+       # push it
+       docker push newcloudnetworks/php-dev-reports-service:ot-latest
+       docker push newcloudnetworks/php-dev-reports-service:ot-$NEXTVERSION
+
+       #######################################################################################################
+       ##########Creating docker image for settings-service DEV################################################
+       #######################################################################################################
+
+       echo "Creating docker image for settings-service DEV"
+       cd ../settings-service
+       
+       sed -i "s/^DB_USERNAME=.*/DB_USERNAME=${IN1_DB_USERNAME}/" env-dev
+       sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=\"${IN1_DB_PASSWORD}\"/" env-dev
+       sed -i "s/^REDIS_PASSWORD=.*/REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-dev
+       sed -i "s/^PROMETHEUS_REDIS_PASSWORD=.*/PROMETHEUS_REDIS_PASSWORD=\${REDIS_PASS}\/" env-dev
+       sed -i 's/APP_NAME=Pasco-cPanel/APP_NAME=Pasco-dev/g' env-dev
+       cp env-dev .env
+       destdir=../../../../../PHPVERSION-DEV-OT
+       value=`cat ../../../../../PHPVERSION-DEV-OT`
+       NEXTVERSION=${value}
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=dev-settings-service
+       docker build -t newcloudnetworks/php-dev-settings-service:ot-latest -t newcloudnetworks/php-dev-settings-service:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/dev-settings-service:latest newcloudnetworks/dev-settings-service:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/dev-settings-service:latest newcloudnetworks/dev-settings-service:ot-latest
+       #dockerhub cred
+       # push it
+       docker push newcloudnetworks/php-dev-settings-service:ot-latest
+       docker push newcloudnetworks/php-dev-settings-service:ot-$NEXTVERSION
+
+
+       #######################################################################################################
+       ##########Creating docker image for subscription-dev DEV###############################################
+       #######################################################################################################
+
+       cd ../subscription
+       
+       sed -i "s/^DB_USERNAME=.*/DB_USERNAME=${IN1_DB_USERNAME}/" env-dev
+       sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=\"${IN1_DB_PASSWORD}\"/" env-dev
+       sed -i "s/^REDIS_PASSWORD=.*/REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-dev
+       sed -i "s/^PROMETHEUS_REDIS_PASSWORD=.*/PROMETHEUS_REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-dev
+       sed -i 's/APP_NAME=Pasco-cPanel/APP_NAME=Pasco-dev/g' env-dev
+       cp env-dev .env
+       destdir=../../../../../PHPVERSION-DEV-OT
+       value=`cat ../../../../../PHPVERSION-DEV-OT`
+       NEXTVERSION=${value}
+
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=dev-subscription
+
+       docker build -t newcloudnetworks/php-dev-subscription:ot-latest -t newcloudnetworks/php-dev-subscription:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/dev-subscription:latest newcloudnetworks/dev-subscription:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/dev-subscription:latest newcloudnetworks/dev-subscription:ot-latest
+       #dockerhub cred
+       # push it
+       docker push newcloudnetworks/php-dev-subscription:ot-latest
+       docker push newcloudnetworks/php-dev-subscription:ot-$NEXTVERSION
+
+       #######################################################################################################
+       ##########Creating docker image for vac DEV############################################################
+       #######################################################################################################
+
+       cd ../vac
+       
+       sed -i "s/^DB_USERNAME=.*/DB_USERNAME=${IN1_DB_USERNAME}/" env-dev
+       sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=\"${IN1_DB_PASSWORD}\"/" env-dev
+       sed -i "s/^REDIS_PASSWORD=.*/REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-dev
+       sed -i "s/^PROMETHEUS_REDIS_PASSWORD=.*/PROMETHEUS_REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-dev
+       sed -i 's/APP_NAME=Pasco-cPanel/APP_NAME=Pasco-dev/g' env-dev
+       cp env-dev .env
+       destdir=../../../../../PHPVERSION-DEV-OT
+       value=`cat ../../../../../PHPVERSION-DEV-OT`
+       NEXTVERSION=${value}
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=dev-vac
+
+       docker build -t newcloudnetworks/php-dev-vac:ot-latest -t newcloudnetworks/php-dev-vac:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/dev-vac:latest newcloudnetworks/dev-vac:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/dev-vac:latest newcloudnetworks/dev-vac:ot-latest
+       #dockerhub cred
+       # push it
+       docker push newcloudnetworks/php-dev-vac:ot-latest
+       docker push newcloudnetworks/php-dev-vac:ot-$NEXTVERSION
+
+       ######################################################################################################
+       ##########Creating docker image for vbo DEV###########################################################
+       ######################################################################################################
+
+       cd ../vbo
+       
+       sed -i "s/^DB_USERNAME=.*/DB_USERNAME=${IN1_DB_USERNAME}/" env-dev
+       sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=\"${IN1_DB_PASSWORD}\"/" env-dev
+       sed -i "s/^REDIS_PASSWORD=.*/REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-dev
+       sed -i "s/^PROMETHEUS_REDIS_PASSWORD=.*/PROMETHEUS_REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-dev
+       sed -i 's/APP_NAME=Pasco-cPanel/APP_NAME=Pasco-dev/g' env-dev
+       cp env-dev .env
+       destdir=../../../../../PHPVERSION-DEV-OT
+       value=`cat ../../../../../PHPVERSION-DEV-OT`
+       NEXTVERSION=${value}
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=dev-vbo
+
+       docker build -t newcloudnetworks/php-dev-vbo:ot-latest -t newcloudnetworks/php-dev-vbo:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/dev-vbo:latest newcloudnetworks/dev-vbo:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/dev-vbo:latest newcloudnetworks/dev-vbo:ot-latest
+       #dockerhub cred
+       # push it
+       docker push newcloudnetworks/php-dev-vbo:ot-latest
+       docker push newcloudnetworks/php-dev-vbo:ot-$NEXTVERSION
+
+
+       ######################################################################################################
+       ##################################Creating docker image for web-ms DEV################################
+       ######################################################################################################
+
+       cd ../web-ms
+       
+       sed -i "s/^DB_USERNAME=.*/DB_USERNAME=${IN1_DB_USERNAME}/" env-dev
+       sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=\"${IN1_DB_PASSWORD}\"/" env-dev
+       sed -i "s/^REDIS_PASSWORD=.*/REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-dev
+       sed -i "s/^PROMETHEUS_REDIS_PASSWORD=.*/PROMETHEUS_REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-dev
+       sed -i 's/APP_NAME=Pasco-cPanel/APP_NAME=Pasco-dev/g' env-dev
+       cp env-dev .env
+       destdir=../../../../../PHPVERSION-DEV-OT
+       value=`cat ../../../../../PHPVERSION-DEV-OT`
+       NEXTVERSION=${value}
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=dev-web-ms
+
+       docker build -t newcloudnetworks/php-dev-web-ms:ot-latest -t newcloudnetworks/php-dev-web-ms:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/dev-web-ms:latest newcloudnetworks/dev-web-ms:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/dev-web-ms:latest newcloudnetworks/dev-web-ms:ot-latest
+       #dockerhub cred
+       # push it
+       docker push newcloudnetworks/php-dev-web-ms:ot-latest
+       docker push newcloudnetworks/php-dev-web-ms:ot-$NEXTVERSION
+
+  rules: 
+  - if: $CI_COMMIT_BRANCH == "in1-docker-dev"
+    when: on_success 
+
+
+
+k8s-delete-dev:
+     variables:
+        GIT_STRATEGY: none
+     tags:
+       - dev-tanzu-php
+     stage: k8s-delete-dev
+     script:
+       - |-
+          cd /home/gitlab-runner/builds
+          bash delete-deploy-php.sh
+             
+     rules: 
+     - if: ($CI_COMMIT_BRANCH == "in1-docker-dev")
+       when: on_success
+
+
+
+k8s-deploy-dev:
+     variables:
+        GIT_STRATEGY: none
+     tags:
+       - dev-tanzu-php
+     stage: k8s-deploy-dev
+     script:
+       - |-
+          cd /home/gitlab-runner/builds/php-yaml
+          echo "Web-ms kubernetes implementation"
+          kubectl apply -f web-ms/deployment.yaml
+          echo "Entity service kubernetes implementation"
+          kubectl apply -f entity-management/deployment.yaml
+          echo "Reports kubernetes implementation"
+          kubectl apply -f reports/deployment.yaml
+          echo "Settings kubernetes implementation"
+          kubectl apply -f settings/deployment.yaml
+          echo "Subscription kubernetes implementation"
+          kubectl apply -f subscription/deployment.yaml
+          echo "Vac kubernetes implementation"
+          kubectl apply -f vac/deployment.yaml
+          echo "Vbo kubernetes implementation"
+          kubectl apply -f vbo/deployment.yaml
+             
+     rules: 
+     - if: ($CI_COMMIT_BRANCH == "in1-docker-dev")
+       when: on_success
+
+
+ 
+check-build-dev:
+     variables:
+         GIT_STRATEGY: none
+     tags:
+       - dev-tanzu-php
+     stage: check-build-dev
+     script:
+       - |
+          cd /home/gitlab-runner/builds/php-yaml/rollback_build
+          echo "Checking new builds , if they fail , initiate rollbacks for docker-dev"
+          sh build_check.sh
+          echo "end build check stage for docker dev"
+     rules: 
+     - if: $CI_COMMIT_BRANCH == "in1-docker-dev"
+       when: always
+
+rollback-dev:
+     variables:
+         GIT_STRATEGY: none
+     tags:
+       - dev-tanzu-php
+     stage: rollback-dev
+     script:
+       - |
+          cd /home/gitlab-runner/builds/php-yaml/rollback_build
+          echo "if build check failed , initiate rollbacks for docker-dev"
+          sh rollback.sh
+          echo "end rollback stage"
+     rules: 
+     - if: $CI_COMMIT_BRANCH == "in1-docker-dev"
+       when: on_failure 
+
+stable-tag-dev:
+          variables:
+             GIT_STRATEGY: none
+          tags:
+           - dev-tanzu-php
+          stage: stable-tag-dev
+          script:
+            - |-
+               cp /home/gitlab-runner/builds/PHPVERSION-DEV-OT /home/gitlab-runner/builds/PHPVERSION-DEV-OT-STABLE
+          rules: 
+          - if: ($CI_COMMIT_BRANCH == "in1-docker-dev")
+            when: on_success
+
+if-old-commit-tanzu-qa:
+  tags:
+    - qa-in1-php
+  stage: if-old-commit-tanzu-qa
+  script:
+    - LAST_SHA=$(curl -s --header "PRIVATE-TOKEN:9RG6-Fw7ottfAzRYBMYY" "https://git.otava.com/api/v4/projects/274/pipelines?ref=docker-in1&per_page=5&&sort=desc" | jq -c '.[1] | .sha' | sed -e 's/^"//' -e 's/"$//')
+    - LAST_PIPE=$(curl -s --header "PRIVATE-TOKEN:9RG6-Fw7ottfAzRYBMYY" "https://git.otava.com/api/v4/projects/274/pipelines?per_page=1&&sort=desc" | jq -c '.[0] | .id' | sed -e 's/^"//' -e 's/"$//')
+    - echo $LAST_SHA
+    - echo $LAST_PIPE
+    - echo $CI_COMMIT_SHA
+    - > 
+      if [ "$LAST_SHA" == "$CI_COMMIT_SHA" ]; then 
+         echo "There are no changes since last run"
+         curl --request POST --header "PRIVATE-TOKEN:9RG6-Fw7ottfAzRYBMYY" "https://git.otava.com/api/v4/projects/274/pipelines/$LAST_PIPE/cancel"
+      fi
+  rules: 
+     - if: ($CI_COMMIT_BRANCH == "docker-in1" && $CI_PIPELINE_SOURCE == "schedule")
+       when: always
+
+deleting-image-qa:
+          variables:
+             GIT_STRATEGY: none
+          tags:
+           - qa-in1-php
+          stage: deleting-image-qa
+          script:
+            - |-
+               cd /home/gitlab-runner/builds/docker-scripts
+               bash docker-php-qa.sh
+          rules: 
+          - if: ($CI_COMMIT_BRANCH == "docker-in1" && $CI_PIPELINE_SOURCE == "schedule")
+            when: on_success
+
+ot-build-qa:
+  tags:
+    - qa-in1-php
+  stage: ot-build-qa
+  script:
+    - |-
+
+       ######################################################################################################
+       ##########Creating docker image for entity-management-service DEV#####################################
+       ######################################################################################################
+
+       echo "Creating docker image for entity-management-service DEV"
+       cd entity-management-service
+       sed -i "s/^DB_USERNAME=.*/DB_USERNAME=${IN1_DB_USERNAME}/" env-qa
+       sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=\"${IN1_DB_PASSWORD}\"/" env-qa
+       sed -i "s/^REDIS_PASSWORD=.*/REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-qa
+       sed -i "s/^PROMETHEUS_REDIS_PASSWORD=.*/PROMETHEUS_REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-qa
+       cp env-qa .env
+       destdir=../../../../../PHPVERSION-QA-OT
+       value=`cat ../../../../../PHPVERSION-QA-OT`
+       NEXTVERSION=$(echo ${value} | awk -F. -v OFS=. '{$NF += 1 ; print}')
+       echo "${NEXTVERSION}"
+       echo "${NEXTVERSION}" > "$destdir"
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       #USERNAME=newcloudnetworks
+       # image name
+       #IMAGE=dev-entity-management
+       docker build -t newcloudnetworks/php-docker-entity-management:ot-latest -t newcloudnetworks/php-docker-entity-management:ot-$NEXTVERSION .
+       #dockerhub cred
+       echo "$DOCKER_PASSWORD" | docker login --username $DOCKER_USER_NAME --password-stdin
+       # push it
+       docker push newcloudnetworks/php-docker-entity-management:ot-latest
+       docker push newcloudnetworks/php-docker-entity-management:ot-$NEXTVERSION
+
+       #######################################################################################################
+       ##########Creating docker image for reports-service DEV#################################################
+       #######################################################################################################
+
+       echo "Creating docker image for reports-service DEV"
+       cd ../reports-service
+      
+       sed -i "s/^DB_USERNAME=.*/DB_USERNAME=${IN1_DB_USERNAME}/" env-qa
+       sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=\"${IN1_DB_PASSWORD}\"/" env-qa
+       sed -i "s/^REDIS_PASSWORD=.*/REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-qa
+       sed -i "s/^PROMETHEUS_REDIS_PASSWORD=.*/PROMETHEUS_REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-qa
+       cp env-qa .env
+       destdir=../../../../../PHPVERSION-QA-OT
+       value=`cat ../../../../../PHPVERSION-QA-OT`
+       NEXTVERSION=${value}
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       #USERNAME=newcloudnetworks
+       # image name
+       #IMAGE=dev-reports-service
+       docker build -t newcloudnetworks/php-docker-reports-service:ot-latest -t newcloudnetworks/php-docker-reports-service:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/dev-reports-service:latest newcloudnetworks/dev-reports-service:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/dev-reports-service:latest newcloudnetworks/dev-reports-service:ot-latest
+       #dockerhub cred
+       # push it
+       docker push newcloudnetworks/php-docker-reports-service:ot-latest
+       docker push newcloudnetworks/php-docker-reports-service:ot-$NEXTVERSION
+
+       #######################################################################################################
+       ##########Creating docker image for settings-service DEV################################################
+       #######################################################################################################
+
+       echo "Creating docker image for settings-service DEV"
+       cd ../settings-service
+       
+       sed -i "s/^DB_USERNAME=.*/DB_USERNAME=${IN1_DB_USERNAME}/" env-qa
+       sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=\"${IN1_DB_PASSWORD}\"/" env-qa
+       sed -i "s/^REDIS_PASSWORD=.*/REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-qa
+       sed -i "s/^PROMETHEUS_REDIS_PASSWORD=.*/PROMETHEUS_REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-qa
+       cp env-qa .env
+       destdir=../../../../../PHPVERSION-QA-OT
+       value=`cat ../../../../../PHPVERSION-QA-OT`
+       NEXTVERSION=${value}
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=dev-settings-service
+       docker build -t newcloudnetworks/php-docker-settings-service:ot-latest -t newcloudnetworks/php-docker-settings-service:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/dev-settings-service:latest newcloudnetworks/dev-settings-service:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/dev-settings-service:latest newcloudnetworks/dev-settings-service:ot-latest
+       #dockerhub cred
+       # push it
+       docker push newcloudnetworks/php-docker-settings-service:ot-latest
+       docker push newcloudnetworks/php-docker-settings-service:ot-$NEXTVERSION
+
+
+       #######################################################################################################
+       ##########Creating docker image for subscription-dev DEV###############################################
+       #######################################################################################################
+
+       cd ../subscription
+       
+       sed -i "s/^DB_USERNAME=.*/DB_USERNAME=${IN1_DB_USERNAME}/" env-qa
+       sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=\"${IN1_DB_PASSWORD}\"/" env-qa
+       sed -i "s/^REDIS_PASSWORD=.*/REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-qa
+       sed -i "s/^PROMETHEUS_REDIS_PASSWORD=.*/PROMETHEUS_REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-qa
+       cp env-qa .env
+       destdir=../../../../../PHPVERSION-QA-OT
+       value=`cat ../../../../../PHPVERSION-QA-OT`
+       NEXTVERSION=${value}
+
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=dev-subscription
+
+       docker build -t newcloudnetworks/php-docker-subscription:ot-latest -t newcloudnetworks/php-docker-subscription:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/dev-subscription:latest newcloudnetworks/dev-subscription:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/dev-subscription:latest newcloudnetworks/dev-subscription:ot-latest
+       #dockerhub cred
+       # push it
+       docker push newcloudnetworks/php-docker-subscription:ot-latest
+       docker push newcloudnetworks/php-docker-subscription:ot-$NEXTVERSION
+
+       #######################################################################################################
+       ##########Creating docker image for vac DEV############################################################
+       #######################################################################################################
+
+       cd ../vac
+       
+       sed -i "s/^DB_USERNAME=.*/DB_USERNAME=${IN1_DB_USERNAME}/" env-qa
+       sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=\"${IN1_DB_PASSWORD}\"/" env-qa
+       sed -i "s/^REDIS_PASSWORD=.*/REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-qa
+       sed -i "s/^PROMETHEUS_REDIS_PASSWORD=.*/PROMETHEUS_REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-qa
+       cp env-qa .env
+       destdir=../../../../../PHPVERSION-QA-OT
+       value=`cat ../../../../../PHPVERSION-QA-OT`
+       NEXTVERSION=${value}
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=dev-vac
+
+       docker build -t newcloudnetworks/php-docker-vac:ot-latest -t newcloudnetworks/php-docker-vac:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/dev-vac:latest newcloudnetworks/dev-vac:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/dev-vac:latest newcloudnetworks/dev-vac:ot-latest
+       #dockerhub cred
+       # push it
+       docker push newcloudnetworks/php-docker-vac:ot-latest
+       docker push newcloudnetworks/php-docker-vac:ot-$NEXTVERSION
+
+       ######################################################################################################
+       ##########Creating docker image for vbo DEV###########################################################
+       ######################################################################################################
+
+       cd ../vbo
+       
+       sed -i "s/^DB_USERNAME=.*/DB_USERNAME=${IN1_DB_USERNAME}/" env-qa
+       sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=\"${IN1_DB_PASSWORD}\"/" env-qa
+       sed -i "s/^REDIS_PASSWORD=.*/REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-qa
+       sed -i "s/^PROMETHEUS_REDIS_PASSWORD=.*/PROMETHEUS_REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-qa
+       cp env-qa .env
+       destdir=../../../../../PHPVERSION-QA-OT
+       value=`cat ../../../../../PHPVERSION-QA-OT`
+       NEXTVERSION=${value}
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=dev-vbo
+
+       docker build -t newcloudnetworks/php-docker-vbo:ot-latest -t newcloudnetworks/php-docker-vbo:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/dev-vbo:latest newcloudnetworks/dev-vbo:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/dev-vbo:latest newcloudnetworks/dev-vbo:ot-latest
+       #dockerhub cred
+       # push it
+       docker push newcloudnetworks/php-docker-vbo:ot-latest
+       docker push newcloudnetworks/php-docker-vbo:ot-$NEXTVERSION
+
+
+       ######################################################################################################
+       ##################################Creating docker image for web-ms DEV################################
+       ######################################################################################################
+
+       cd ../web-ms
+       
+       sed -i "s/^DB_USERNAME=.*/DB_USERNAME=${IN1_DB_USERNAME}/" env-qa
+       sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=\"${IN1_DB_PASSWORD}\"/" env-qa
+       sed -i "s/^REDIS_PASSWORD=.*/REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-qa
+       sed -i "s/^PROMETHEUS_REDIS_PASSWORD=.*/PROMETHEUS_REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-qa
+       cp env-qa .env
+       destdir=../../../../../PHPVERSION-QA-OT
+       value=`cat ../../../../../PHPVERSION-QA-OT`
+       NEXTVERSION=${value}
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=dev-web-ms
+
+       docker build -t newcloudnetworks/php-docker-web-ms:ot-latest -t newcloudnetworks/php-docker-web-ms:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/dev-web-ms:latest newcloudnetworks/dev-web-ms:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/dev-web-ms:latest newcloudnetworks/dev-web-ms:ot-latest
+       #dockerhub cred
+       # push it
+       docker push newcloudnetworks/php-docker-web-ms:ot-latest
+       docker push newcloudnetworks/php-docker-web-ms:ot-$NEXTVERSION
+
+  rules: 
+  - if: ($CI_COMMIT_BRANCH == "docker-in1" && $CI_PIPELINE_SOURCE == "schedule")
+    when: on_success 
+
+
+
+k8s-delete-qa:
+     variables:
+        GIT_STRATEGY: none
+     tags:
+       - qa-in1-php
+     stage: k8s-delete-qa
+     script:
+       - |-
+          cd /home/gitlab-runner/builds
+          bash delete-deploy-php.sh 
+             
+     rules: 
+     - if: ($CI_COMMIT_BRANCH == "docker-in1" && $CI_PIPELINE_SOURCE == "schedule")
+       when: on_success
+
+run-queries-qa:
+  tags:
+    - qa-in1-php
+  stage: run-queries-qa
+  script:
+    - |
+       cp db-queries/db_queries.sql /home/gitlab-runner/builds/php-yaml/db-scripts/db_queries_new.sql
+       cd /home/gitlab-runner/builds/php-yaml/db-scripts
+       sh run.sh
+       echo "end of the run queries stage"
+  rules: 
+     - if: ($CI_COMMIT_BRANCH == "docker-in1" && $CI_PIPELINE_SOURCE == "schedule")
+       when: on_success
+
+k8s-deploy-qa:
+     variables:
+        GIT_STRATEGY: none
+     tags:
+       - qa-in1-php
+     stage: k8s-deploy-qa
+     script:
+       - |-
+          cd /home/gitlab-runner/builds/php-yaml
+          echo "Web-ms kubernetes implementation"
+          kubectl apply -f web-ms/deployment.yaml
+          echo "Entity service kubernetes implementation"
+          kubectl apply -f entity-management/deployment.yaml
+          echo "Reports kubernetes implementation"
+          kubectl apply -f reports/deployment.yaml
+          echo "Settings kubernetes implementation"
+          kubectl apply -f settings/deployment.yaml
+          echo "Subscription kubernetes implementation"
+          kubectl apply -f subscription/deployment.yaml
+          echo "Vac kubernetes implementation"
+          kubectl apply -f vac/deployment.yaml
+          echo "Vbo kubernetes implementation"
+          kubectl apply -f vbo/deployment.yaml
+             
+     rules: 
+     - if: ($CI_COMMIT_BRANCH == "docker-in1" && $CI_PIPELINE_SOURCE == "schedule")
+       when: on_success
+ 
+check-build-qa:
+     variables:
+         GIT_STRATEGY: none
+     tags:
+       - qa-in1-php
+     stage: check-build-qa
+     script:
+       - |
+          cd /home/gitlab-runner/builds/php-yaml/rollback_build
+          echo "Checking new builds , if they fail , initiate rollbacks for docker-dev"
+          sh build_check.sh
+          echo "end build check stage for docker dev"
+     rules: 
+     - if: ($CI_COMMIT_BRANCH == "docker-in1" && $CI_PIPELINE_SOURCE == "schedule")
+       when: always
+
+rollback-qa:
+     variables:
+         GIT_STRATEGY: none
+     tags:
+       - qa-in1-php
+     stage: rollback-qa
+     script:
+       - |
+          cd /home/gitlab-runner/builds/php-yaml/rollback_build
+          echo "if build check failed , initiate rollbacks for docker-dev"
+          sh rollback.sh
+          echo "end rollback stage"
+     rules: 
+     - if: ($CI_COMMIT_BRANCH == "docker-in1" && $CI_PIPELINE_SOURCE == "schedule")
+       when: on_failure 
+
+stable-tag-qa:
+          variables:
+             GIT_STRATEGY: none
+          tags:
+           - qa-in1-php
+          stage: stable-tag-qa
+          script:
+            - |-
+               cp /home/gitlab-runner/builds/PHPVERSION-QA-OT /home/gitlab-runner/builds/PHPVERSION-QA-OT-STABLE
+          rules: 
+          - if: ($CI_COMMIT_BRANCH == "docker-in1" && $CI_PIPELINE_SOURCE == "schedule")
+            when: on_success
+
+composer-scan:
+  tags:
+    - php-in1-preprod
+  stage: composer-scan
+  script:
+    - |-
+       ls
+       cd web-ms
+       cp /home/gitlab-runner/builds/php-scan.sh .
+       sh php-scan.sh
+  rules: 
+     - if: ($CI_COMMIT_BRANCH == "docker-in1-preprod" && $CI_PIPELINE_SOURCE == "schedule" && $STAGE == "composer-scan")
+       when: always
+
+build-sonar-in1:
+  tags:
+    - in1-sonar-php
+  stage: build-sonar-in1
+  image: 
+    name: sonarsource/sonar-scanner-cli:latest
+    entrypoint: [""]
+  variables:
+    SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"  # Defines the location of the analysis task cache
+    GIT_DEPTH: "0"  # Tells git to fetch all the branches of the project, required by the analysis task
+  cache:
+    key: "${CI_JOB_NAME}"
+    paths:
+      - .sonar/cache
+  script: 
+    - sonar-scanner
+  allow_failure: true
+  rules: 
+     - if: ($CI_COMMIT_BRANCH == "docker-in1-preprod" && $CI_PIPELINE_SOURCE == "schedule")
+       when: always
+
+if-old-commit-tanzu-preprod:
+  tags:
+    - php-in1-preprod
+  stage: if-old-commit-tanzu-preprod
+  script:
+    - LAST_SHA=$(curl -s --header "PRIVATE-TOKEN:9RG6-Fw7ottfAzRYBMYY" "https://git.otava.com/api/v4/projects/274/pipelines?ref=docker-in1-preprod-preprod&per_page=5&&sort=desc" | jq -c '.[1] | .sha' | sed -e 's/^"//' -e 's/"$//')
+    - LAST_PIPE=$(curl -s --header "PRIVATE-TOKEN:9RG6-Fw7ottfAzRYBMYY" "https://git.otava.com/api/v4/projects/274/pipelines?per_page=1&&sort=desc" | jq -c '.[0] | .id' | sed -e 's/^"//' -e 's/"$//')
+    - echo $LAST_SHA
+    - echo $LAST_PIPE
+    - echo $CI_COMMIT_SHA
+    - > 
+      if [ "$LAST_SHA" == "$CI_COMMIT_SHA" ]; then 
+         echo "There are no changes since last run"
+         curl --request POST --header "PRIVATE-TOKEN:9RG6-Fw7ottfAzRYBMYY" "https://git.otava.com/api/v4/projects/274/pipelines/$LAST_PIPE/cancel"
+      fi
+  rules: 
+     - if: ($CI_COMMIT_BRANCH == "docker-in1-preprod" && $CI_PIPELINE_SOURCE != "schedule")
+       when: always
+
+deleting-image-preprod:
+          variables:
+             GIT_STRATEGY: none
+          tags:
+           - php-in1-preprod
+          stage: deleting-image-preprod
+          script:
+            - |-
+               cd /home/gitlab-runner/builds/docker-scripts
+               bash docker-php-preprod.sh
+          rules: 
+          - if: ($CI_COMMIT_BRANCH == "docker-in1-preprod" && $CI_PIPELINE_SOURCE != "schedule")
+            when: on_success
+
+ot-build-preprod:
+  tags:
+    - php-in1-preprod
+  stage: ot-build-preprod
+  script:
+    - |-
+
+       ######################################################################################################
+       ##########Creating docker image for entity-management-service DEV#####################################
+       ######################################################################################################
+
+       echo "Creating docker image for entity-management-service DEV"
+       cd entity-management-service
+       sed -i "s/^DB_USERNAME=.*/DB_USERNAME=${IN1_DB_USERNAME}/" env-sb
+       sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=\"${IN1_DB_PASSWORD}\"/" env-sb
+       sed -i "s/^REDIS_PASSWORD=.*/REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-sb
+       sed -i "s/^PROMETHEUS_REDIS_PASSWORD=.*/PROMETHEUS_REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-sb
+       sed -i 's/APP_NAME=Pasco-cPanel/APP_NAME=Pasco-preprod/g' env-sb
+       sed -i "s/^DB_USERNAME=.*/DB_USERNAME=${IN1_DB_USERNAME}/" env-prod
+       sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=\"${IN1_DB_PASSWORD}\"/" env-prod
+       sed -i "s/^REDIS_PASSWORD=.*/REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-prod
+       sed -i "s/^PROMETHEUS_REDIS_PASSWORD=.*/PROMETHEUS_REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-prod
+       sed -i 's/APP_NAME=Pasco-cPanel/APP_NAME=Pasco-prod/g' env-prod
+       cp env-sb .env
+       destdir=../../../../../PHPVERSION-PREPROD-OT
+       value=`cat ../../../../../PHPVERSION-PREPROD-OT`
+       NEXTVERSION=$(echo ${value} | awk -F. -v OFS=. '{$NF += 1 ; print}')
+       echo "${NEXTVERSION}"
+       echo "${NEXTVERSION}" > "$destdir"
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       #USERNAME=newcloudnetworks
+       # image name
+       #IMAGE=dev-entity-management
+       docker build -t newcloudnetworks/php-preprod-entity-management:ot-latest -t newcloudnetworks/php-preprod-entity-management:ot-$NEXTVERSION .
+       #dockerhub cred
+       echo "$DOCKER_PASSWORD" | docker login --username $DOCKER_USER_NAME --password-stdin
+       # push it
+       docker push newcloudnetworks/php-preprod-entity-management:ot-latest
+       docker push newcloudnetworks/php-preprod-entity-management:ot-$NEXTVERSION
+
+       #######################################################################################################
+       ##########Creating docker image for reports-service DEV#################################################
+       #######################################################################################################
+
+       echo "Creating docker image for reports-service DEV"
+       cd ../reports-service
+      
+       sed -i "s/^DB_USERNAME=.*/DB_USERNAME=${IN1_DB_USERNAME}/" env-sb
+       sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=\"${IN1_DB_PASSWORD}\"/" env-sb
+       sed -i "s/^REDIS_PASSWORD=.*/REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-sb
+       sed -i "s/^PROMETHEUS_REDIS_PASSWORD=.*/PROMETHEUS_REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-sb
+       sed -i 's/APP_NAME=Pasco-cPanel/APP_NAME=Pasco-preprod/g' env-sb
+       sed -i "s/^DB_USERNAME=.*/DB_USERNAME=${IN1_DB_USERNAME}/" env-prod
+       sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=\"${IN1_DB_PASSWORD}\"/" env-prod
+       sed -i "s/^REDIS_PASSWORD=.*/REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-prod
+       sed -i "s/^PROMETHEUS_REDIS_PASSWORD=.*/PROMETHEUS_REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-prod
+       sed -i 's/APP_NAME=Pasco-cPanel/APP_NAME=Pasco-prod/g' env-prod
+       cp env-sb .env
+       destdir=../../../../../PHPVERSION-PREPROD-OT
+       value=`cat ../../../../../PHPVERSION-PREPROD-OT`
+       NEXTVERSION=${value}
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       #USERNAME=newcloudnetworks
+       # image name
+       #IMAGE=dev-reports-service
+       docker build -t newcloudnetworks/php-preprod-reports-service:ot-latest -t newcloudnetworks/php-preprod-reports-service:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/dev-reports-service:latest newcloudnetworks/dev-reports-service:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/dev-reports-service:latest newcloudnetworks/dev-reports-service:ot-latest
+       #dockerhub cred
+       # push it
+       docker push newcloudnetworks/php-preprod-reports-service:ot-latest
+       docker push newcloudnetworks/php-preprod-reports-service:ot-$NEXTVERSION
+
+       #######################################################################################################
+       ##########Creating docker image for settings-service DEV################################################
+       #######################################################################################################
+
+       echo "Creating docker image for settings-service DEV"
+       cd ../settings-service
+       
+       sed -i "s/^DB_USERNAME=.*/DB_USERNAME=${IN1_DB_USERNAME}/" env-sb
+       sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=\"${IN1_DB_PASSWORD}\"/" env-sb
+       sed -i "s/^REDIS_PASSWORD=.*/REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-sb
+       sed -i "s/^PROMETHEUS_REDIS_PASSWORD=.*/PROMETHEUS_REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-sb
+       sed -i 's/APP_NAME=Pasco-cPanel/APP_NAME=Pasco-preprod/g' env-sb
+       sed -i "s/^DB_USERNAME=.*/DB_USERNAME=${IN1_DB_USERNAME}/" env-prod
+       sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=\"${IN1_DB_PASSWORD}\"/" env-prod
+       sed -i "s/^REDIS_PASSWORD=.*/REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-prod
+       sed -i "s/^PROMETHEUS_REDIS_PASSWORD=.*/PROMETHEUS_REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-prod
+       sed -i 's/APP_NAME=Pasco-cPanel/APP_NAME=Pasco-prod/g' env-prod
+       cp env-sb .env
+       destdir=../../../../../PHPVERSION-PREPROD-OT
+       value=`cat ../../../../../PHPVERSION-PREPROD-OT`
+       NEXTVERSION=${value}
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=dev-settings-service
+       docker build -t newcloudnetworks/php-preprod-settings-service:ot-latest -t newcloudnetworks/php-preprod-settings-service:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/dev-settings-service:latest newcloudnetworks/dev-settings-service:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/dev-settings-service:latest newcloudnetworks/dev-settings-service:ot-latest
+       #dockerhub cred
+       # push it
+       docker push newcloudnetworks/php-preprod-settings-service:ot-latest
+       docker push newcloudnetworks/php-preprod-settings-service:ot-$NEXTVERSION
+
+
+       #######################################################################################################
+       ##########Creating docker image for subscription-dev DEV###############################################
+       #######################################################################################################
+
+       cd ../subscription
+       
+       sed -i "s/^DB_USERNAME=.*/DB_USERNAME=${IN1_DB_USERNAME}/" env-sb
+       sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=\"${IN1_DB_PASSWORD}\"/" env-sb
+       sed -i "s/^REDIS_PASSWORD=.*/REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-sb
+       sed -i "s/^PROMETHEUS_REDIS_PASSWORD=.*/PROMETHEUS_REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-sb
+       sed -i 's/APP_NAME=Pasco-cPanel/APP_NAME=Pasco-preprod/g' env-sb
+       sed -i "s/^DB_USERNAME=.*/DB_USERNAME=${IN1_DB_USERNAME}/" env-prod
+       sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=\"${IN1_DB_PASSWORD}\"/" env-prod
+       sed -i "s/^REDIS_PASSWORD=.*/REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-prod
+       sed -i "s/^PROMETHEUS_REDIS_PASSWORD=.*/PROMETHEUS_REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-prod
+       sed -i 's/APP_NAME=Pasco-cPanel/APP_NAME=Pasco-prod/g' env-prod
+       cp env-sb .env
+       destdir=../../../../../PHPVERSION-PREPROD-OT
+       value=`cat ../../../../../PHPVERSION-PREPROD-OT`
+       NEXTVERSION=${value}
+
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=dev-subscription
+
+       docker build -t newcloudnetworks/php-preprod-subscription:ot-latest -t newcloudnetworks/php-preprod-subscription:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/dev-subscription:latest newcloudnetworks/dev-subscription:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/dev-subscription:latest newcloudnetworks/dev-subscription:ot-latest
+       #dockerhub cred
+       # push it
+       docker push newcloudnetworks/php-preprod-subscription:ot-latest
+       docker push newcloudnetworks/php-preprod-subscription:ot-$NEXTVERSION
+
+       #######################################################################################################
+       ##########Creating docker image for vac DEV############################################################
+       #######################################################################################################
+
+       cd ../vac
+       
+       sed -i "s/^DB_USERNAME=.*/DB_USERNAME=${IN1_DB_USERNAME}/" env-sb
+       sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=\"${IN1_DB_PASSWORD}\"/" env-sb
+       sed -i "s/^REDIS_PASSWORD=.*/REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-sb
+       sed -i "s/^PROMETHEUS_REDIS_PASSWORD=.*/PROMETHEUS_REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-sb
+       sed -i 's/APP_NAME=Pasco-cPanel/APP_NAME=Pasco-preprod/g' env-sb
+       sed -i "s/^DB_USERNAME=.*/DB_USERNAME=${IN1_DB_USERNAME}/" env-prod
+       sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=\"${IN1_DB_PASSWORD}\"/" env-prod
+       sed -i "s/^REDIS_PASSWORD=.*/REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-prod
+       sed -i "s/^PROMETHEUS_REDIS_PASSWORD=.*/PROMETHEUS_REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-prod
+       sed -i 's/APP_NAME=Pasco-cPanel/APP_NAME=Pasco-prod/g' env-prod
+       cp env-sb .env
+       destdir=../../../../../PHPVERSION-PREPROD-OT
+       value=`cat ../../../../../PHPVERSION-PREPROD-OT`
+       NEXTVERSION=${value}
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=dev-vac
+
+       docker build -t newcloudnetworks/php-preprod-vac:ot-latest -t newcloudnetworks/php-preprod-vac:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/dev-vac:latest newcloudnetworks/dev-vac:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/dev-vac:latest newcloudnetworks/dev-vac:ot-latest
+       #dockerhub cred
+       # push it
+       docker push newcloudnetworks/php-preprod-vac:ot-latest
+       docker push newcloudnetworks/php-preprod-vac:ot-$NEXTVERSION
+
+       ######################################################################################################
+       ##########Creating docker image for vbo DEV###########################################################
+       ######################################################################################################
+
+       cd ../vbo
+       
+       sed -i "s/^DB_USERNAME=.*/DB_USERNAME=${IN1_DB_USERNAME}/" env-sb
+       sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=\"${IN1_DB_PASSWORD}\"/" env-sb
+       sed -i "s/^REDIS_PASSWORD=.*/REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-sb
+       sed -i "s/^PROMETHEUS_REDIS_PASSWORD=.*/PROMETHEUS_REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-sb
+       sed -i 's/APP_NAME=Pasco-cPanel/APP_NAME=Pasco-preprod/g' env-sb
+       sed -i "s/^DB_USERNAME=.*/DB_USERNAME=${IN1_DB_USERNAME}/" env-prod
+       sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=\"${IN1_DB_PASSWORD}\"/" env-prod
+       sed -i "s/^REDIS_PASSWORD=.*/REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-prod
+       sed -i "s/^PROMETHEUS_REDIS_PASSWORD=.*/PROMETHEUS_REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-prod
+       sed -i 's/APP_NAME=Pasco-cPanel/APP_NAME=Pasco-prod/g' env-prod
+       cp env-sb .env
+       destdir=../../../../../PHPVERSION-PREPROD-OT
+       value=`cat ../../../../../PHPVERSION-PREPROD-OT`
+       NEXTVERSION=${value}
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=dev-vbo
+
+       docker build -t newcloudnetworks/php-preprod-vbo:ot-latest -t newcloudnetworks/php-preprod-vbo:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/dev-vbo:latest newcloudnetworks/dev-vbo:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/dev-vbo:latest newcloudnetworks/dev-vbo:ot-latest
+       #dockerhub cred
+       # push it
+       docker push newcloudnetworks/php-preprod-vbo:ot-latest
+       docker push newcloudnetworks/php-preprod-vbo:ot-$NEXTVERSION
+
+
+       ######################################################################################################
+       ##################################Creating docker image for web-ms DEV################################
+       ######################################################################################################
+
+       cd ../web-ms
+       
+       sed -i "s/^DB_USERNAME=.*/DB_USERNAME=${IN1_DB_USERNAME}/" env-sb
+       sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=\"${IN1_DB_PASSWORD}\"/" env-sb
+       sed -i "s/^REDIS_PASSWORD=.*/REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-sb
+       sed -i "s/^PROMETHEUS_REDIS_PASSWORD=.*/PROMETHEUS_REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-sb
+       sed -i 's/APP_NAME=Pasco-cPanel/APP_NAME=Pasco-preprod/g' env-sb
+       sed -i "s/^DB_USERNAME=.*/DB_USERNAME=${IN1_DB_USERNAME}/" env-prod
+       sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=\"${IN1_DB_PASSWORD}\"/" env-prod
+       sed -i "s/^REDIS_PASSWORD=.*/REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-prod
+       sed -i "s/^PROMETHEUS_REDIS_PASSWORD=.*/PROMETHEUS_REDIS_PASSWORD=\"${REDIS_PASS}\"/" env-prod
+       sed -i 's/APP_NAME=Pasco-cPanel/APP_NAME=Pasco-prod/g' env-prod
+       cp env-sb .env
+       destdir=../../../../../PHPVERSION-PREPROD-OT
+       value=`cat ../../../../../PHPVERSION-PREPROD-OT`
+       NEXTVERSION=${value}
+       # SET THE FOLLOWING VARIABLES
+       # docker hub username
+       USERNAME=newcloudnetworks
+       # image name
+       IMAGE=dev-web-ms
+
+       docker build -t newcloudnetworks/php-preprod-web-ms:ot-latest -t newcloudnetworks/php-preprod-web-ms:ot-$NEXTVERSION .
+       #docker tag newcloudnetworks/dev-web-ms:latest newcloudnetworks/dev-web-ms:ot-$NEXTVERSION
+       #docker tag newcloudnetworks/dev-web-ms:latest newcloudnetworks/dev-web-ms:ot-latest
+       #dockerhub cred
+       # push it
+       docker push newcloudnetworks/php-preprod-web-ms:ot-latest
+       docker push newcloudnetworks/php-preprod-web-ms:ot-$NEXTVERSION
+
+  rules: 
+  - if: ($CI_COMMIT_BRANCH == "docker-in1-preprod" && $CI_PIPELINE_SOURCE != "schedule")
+    when: on_success 
+
+
+
+k8s-delete-preprod:
+     variables:
+        GIT_STRATEGY: none
+     tags:
+       - php-in1-preprod
+     stage: k8s-delete-preprod
+     script:
+       - |-
+          cd /home/gitlab-runner/builds
+          bash delete-deploy-php.sh 
+             
+     rules: 
+     - if: ($CI_COMMIT_BRANCH == "docker-in1-preprod" && $CI_PIPELINE_SOURCE != "schedule")
+       when: on_success
+
+run-queries-docker-preprod:
+  tags:
+    - php-in1-preprod
+  stage: run-queries-docker-preprod
+  script:
+    - |
+       cd /home/gitlab-runner/builds/php-yaml/db-scripts
+       sh run.sh
+       echo "end of the run queries stage"
+  retry: 2 
+  rules: 
+     - if: ($CI_COMMIT_BRANCH == "docker-in1-preprod" && $CI_PIPELINE_SOURCE != "schedule")
+       when: on_success
+
+k8s-deploy-preprod:
+     variables:
+        GIT_STRATEGY: none
+     tags:
+       - php-in1-preprod
+     stage: k8s-deploy-preprod
+     script:
+       - |-
+          cd /home/gitlab-runner/builds/php-yaml
+          echo "Web-ms kubernetes implementation"
+          kubectl apply -f web-ms/deployment.yaml
+          echo "Entity service kubernetes implementation"
+          kubectl apply -f entity-management/deployment.yaml
+          echo "Reports kubernetes implementation"
+          kubectl apply -f reports/deployment.yaml
+          echo "Settings kubernetes implementation"
+          kubectl apply -f settings/deployment.yaml
+          echo "Subscription kubernetes implementation"
+          kubectl apply -f subscription/deployment.yaml
+          echo "Vac kubernetes implementation"
+          kubectl apply -f vac/deployment.yaml
+          echo "Vbo kubernetes implementation"
+          kubectl apply -f vbo/deployment.yaml
+             
+     rules: 
+     - if: ($CI_COMMIT_BRANCH == "docker-in1-preprod" && $CI_PIPELINE_SOURCE != "schedule")
+       when: on_success
+
+
+ 
+check-build-preprod:
+     variables:
+         GIT_STRATEGY: none
+     tags:
+       - php-in1-preprod
+     stage: check-build-preprod
+     script:
+       - |
+          cd /home/gitlab-runner/builds/php-yaml/rollback_build
+          echo "Checking new builds , if they fail , initiate rollbacks for docker-dev"
+          sh build_check.sh
+          echo "end build check stage for docker preprod"
+     rules: 
+     - if: ($CI_COMMIT_BRANCH == "docker-in1-preprod" && $CI_PIPELINE_SOURCE != "schedule")
+       when: always
+
+rollback-preprod:
+     variables:
+         GIT_STRATEGY: none
+     tags:
+       - php-in1-preprod
+     stage: rollback-preprod
+     script:
+       - |
+          cd /home/gitlab-runner/builds/php-yaml/rollback_build
+          echo "if build check failed , initiate rollbacks for docker-dev"
+          sh rollback.sh
+          echo "end rollback stage"
+     rules: 
+     - if: ($CI_COMMIT_BRANCH == "docker-in1-preprod" && $CI_PIPELINE_SOURCE != "schedule")
+       when: on_failure 
+
+stable-tag-preprod:
+          variables:
+             GIT_STRATEGY: none
+          tags:
+           - php-in1-preprod
+          stage: stable-tag-preprod
+          script:
+            - |-
+               cp /home/gitlab-runner/builds/PHPVERSION-PREPROD-OT /home/gitlab-runner/builds/PHPVERSION-PREPROD-OT-STABLE
+          rules: 
+          - if: ($CI_COMMIT_BRANCH == "docker-in1-preprod" && $CI_PIPELINE_SOURCE != "schedule")
+            when: on_success
+
+if-old-commit-tanzu-prod:
+  tags:
+    - php-in1-prod
+  stage: if-old-commit-tanzu-prod
+  script:
+    - LAST_SHA=$(curl -s --header "PRIVATE-TOKEN:9RG6-Fw7ottfAzRYBMYY" "https://git.otava.com/api/v4/projects/274/pipelines?ref=production-in1&per_page=5&&sort=desc" | jq -c '.[1] | .sha' | sed -e 's/^"//' -e 's/"$//')
+    - LAST_PIPE=$(curl -s --header "PRIVATE-TOKEN:9RG6-Fw7ottfAzRYBMYY" "https://git.otava.com/api/v4/projects/274/pipelines?per_page=1&&sort=desc" | jq -c '.[0] | .id' | sed -e 's/^"//' -e 's/"$//')
+    - echo $LAST_SHA
+    - echo $LAST_PIPE
+    - echo $CI_COMMIT_SHA
+    - > 
+      if [ "$LAST_SHA" == "$CI_COMMIT_SHA" ]; then 
+         echo "There are no changes since last run"
+         curl --request POST --header "PRIVATE-TOKEN:9RG6-Fw7ottfAzRYBMYY" "https://git.otava.com/api/v4/projects/274/pipelines/$LAST_PIPE/cancel"
+      fi
+  rules: 
+     - if: ($CI_COMMIT_BRANCH == "production-in1")
+       when: always
+
+
+k8s-delete-prod:
+     variables:
+        GIT_STRATEGY: none
+     tags:
+       - php-in1-prod
+     stage: k8s-delete-prod
+     script:
+       - |-
+          cd /home/gitlab-runner/builds
+          bash delete-deploy-php.sh 
+             
+     rules: 
+     - if: ($CI_COMMIT_BRANCH == "production-in1")
+       when: on_success
+
+run-queries-docker-prod:
+  tags:
+    - php-in1-prod
+  stage: run-queries-docker-prod
+  script:
+    - |
+       cd /home/gitlab-runner/builds/php-yaml/db-scripts
+       sh run.sh
+       echo "end of the run queries stage"
+  retry: 2 
+  rules: 
+     - if: ($CI_COMMIT_BRANCH == "production-in1")
+       when: on_success
+
+k8s-deploy-prod:
+     variables:
+        GIT_STRATEGY: none
+     tags:
+       - php-in1-prod
+     stage: k8s-deploy-prod
+     script:
+       - |-
+          cd /home/gitlab-runner/builds/php-yaml
+          echo "Web-ms kubernetes implementation"
+          kubectl apply -f web-ms/deployment.yaml
+          echo "Entity service kubernetes implementation"
+          kubectl apply -f entity-management/deployment.yaml
+          echo "Reports kubernetes implementation"
+          kubectl apply -f reports/deployment.yaml
+          echo "Settings kubernetes implementation"
+          kubectl apply -f settings/deployment.yaml
+          echo "Subscription kubernetes implementation"
+          kubectl apply -f subscription/deployment.yaml
+          echo "Vac kubernetes implementation"
+          kubectl apply -f vac/deployment.yaml
+          echo "Vbo kubernetes implementation"
+          kubectl apply -f vbo/deployment.yaml
+             
+     rules: 
+     - if: ($CI_COMMIT_BRANCH == "production-in1")
+       when: on_success
+ 
+check-build-prod:
+     variables:
+         GIT_STRATEGY: none
+     tags:
+       - php-in1-prod
+     stage: check-build-prod
+     script:
+       - |
+          cd /home/gitlab-runner/builds/php-yaml/rollback_build
+          echo "Checking new builds , if they fail , initiate rollbacks for docker-dev"
+          sh build_check.sh
+          echo "end build check stage for docker prod"
+     rules: 
+     - if: ($CI_COMMIT_BRANCH == "production-in1")
+       when: always
+
+rollback-prod:
+     variables:
+         GIT_STRATEGY: none
+     tags:
+       - php-in1-prod
+     stage: rollback-prod
+     script:
+       - |
+          cd /home/gitlab-runner/builds/php-yaml/rollback_build
+          echo "if build check failed , initiate rollbacks for prod"
+          sh rollback.sh
+          echo "end rollback stage"
+     rules: 
+     - if: ($CI_COMMIT_BRANCH == "production-in1")
+       when: on_failure 
+
+deleting-image-prod:
+          variables:
+             GIT_STRATEGY: none
+          tags:
+           - php-in1-prod
+          stage: deleting-image-prod
+          script:
+            - |-
+               #cp /home/gitlab-runner/builds/PHPVERSION-prod-OT /home/gitlab-runner/builds/PHPVERSION-prod-OT-STABLE
+               cd /home/gitlab-runner/builds/docker-scripts
+               bash docker-php-prod.sh
+          rules: 
+          - if: ($CI_COMMIT_BRANCH == "production-in1")
+            when: on_success

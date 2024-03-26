@@ -1,0 +1,186 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ot-php-web-ms-dev
+  namespace: dev
+  labels:
+    app: php-web-ms-dev
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: php-web-ms-dev
+  template:
+    metadata:
+      labels:
+        app: php-web-ms-dev
+    spec:
+      affinity:  # Add anti-affinity rule
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - php-web-ms-dev
+            topologyKey: kubernetes.io/hostname
+      securityContext:
+        runAsNonRoot: false
+      imagePullSecrets:
+        - name: my-registry-key1
+      initContainers:
+      - name: disable-tcp-timestamps
+        image: busybox
+        command: ["sysctl", "-w", "net.ipv4.tcp_timestamps=0"]
+        securityContext:
+          privileged: true
+      containers:
+        - name: php-web-ms-dev
+          image: newcloudnetworks/php-dev-web-ms:ot-latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          securityContext:
+            capabilities:
+              drop:
+                - "ALL"
+              add:
+                - NET_ADMIN  # Add the NET_ADMIN capability
+                - CHOWN      # Add the CHOWN capability
+                - FOWNER
+                - DAC_OVERRIDE
+                - DAC_READ_SEARCH
+                - SETGID
+                - SETUID
+                - SYS_CHROOT
+                - SYS_NICE
+                - SYS_RESOURCE
+                - NET_BIND_SERVICE
+                - KILL
+            allowPrivilegeEscalation: false
+          resources:
+            limits:
+              cpu: "1000m"
+              memory: "2Gi"
+            requests:
+              cpu: "100m"
+              memory: "512Mi"
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "script"
+              #echo "40.99.172.130   smtp.office365.com" >> /etc/hosts
+              #echo "40.99.170.34    outlook.office365.com" >> /etc/hosts
+              sed -i 's+opscenter-sb+opscenter+g' app.conf
+              echo "cp env-dev .env" >> ./script.sh
+              echo "chown -R www-data:root storage/" >> ./script.sh
+              echo "cp app.conf /etc/apache2/sites-enabled/app.conf" >> ./script.sh
+              echo "service apache2 restart" >> ./script.sh
+              echo "while true; do sleep 1d; done" >> ./script.sh
+              echo "apply 'chmod +x' to *.sh"
+              chmod +x ./script.sh
+              echo "execute script now"
+              sh ./script.sh
+
+          volumeMounts:
+          - name: tmpfile-dev-nfs
+            mountPath: /tmp
+          - name: logfile-webms-dev-nfs
+            mountPath: /var/www/html/storage/logs
+          - mountPath: /var/log/apache2
+            name: apache-webms-dev-nfs
+          - mountPath: /var/log/microservice/apache/gateway
+            name: apache-webms-dev-nfs
+          - mountPath: /var/log/microservice/apache/subscription
+            name: apache-subscription-dev-nfs
+          - mountPath: /var/log/microservice/apache/entity
+            name: apacheentity-management-dev-nfs
+          - mountPath: /var/log/microservice/apache/report
+            name: apache-reports-dev-nfs
+          - mountPath: /var/log/microservice/apache/settings
+            name: apache-settings-dev-nfs
+          - mountPath: /var/log/microservice/apache/vac
+            name: apache-vac-dev-nfs
+          - mountPath: /var/log/microservice/apache/vbo
+            name: apache-vbo-dev-nfs
+          - mountPath: /var/log/microservice/log/vbo
+            name: logfile-vbo-dev-nfs
+          - mountPath: /var/log/microservice/log/vac
+            name: logfile-vac-dev-nfs
+          - mountPath: /var/log/microservice/log/subscription
+            name: logfile-subscription-dev-nfs
+          - mountPath: /var/log/microservice/log/settings
+            name: logfile-settings-dev-nfs
+          - mountPath: /var/log/microservice/log/report
+            name: logfile-reports-dev-nfs
+          - mountPath: /var/log/microservice/log/entity
+            name: logfileentity-management-dev-nfs
+            #- mountPath: /var/www/html/app/Http
+            #name: code-webms-dev
+          - mountPath: /var/www/html/public/downloads
+            name: webms-download-dev-nfs
+          - mountPath: /var/www/html/public/uploads
+            name: webms-uploads-dev-nfs
+
+
+
+      volumes:
+        - name: tmpfile-dev-nfs
+          persistentVolumeClaim:
+            claimName: tmpfile-dev-nfs
+        - name: logfile-webms-dev-nfs
+          persistentVolumeClaim:
+            claimName: logfile-webms-dev-nfs
+        - name: apache-webms-dev-nfs
+          persistentVolumeClaim:
+            claimName: apache-webms-dev-nfs
+        - name: apache-subscription-dev-nfs
+          persistentVolumeClaim:
+            claimName: apache-subscription-dev-nfs
+        - name: apacheentity-management-dev-nfs
+          persistentVolumeClaim:
+            claimName: apacheentity-management-dev-nfs
+        - name: apache-reports-dev-nfs
+          persistentVolumeClaim:
+            claimName: apache-reports-dev-nfs
+        - name: apache-settings-dev-nfs
+          persistentVolumeClaim:
+            claimName: apache-settings-dev-nfs
+        - name: apache-vac-dev-nfs
+          persistentVolumeClaim:
+            claimName: apache-vac-dev-nfs
+        - name: apache-vbo-dev-nfs
+          persistentVolumeClaim:
+            claimName: apache-vbo-dev-nfs
+        - name: logfileentity-management-dev-nfs
+          persistentVolumeClaim:
+            claimName: logfileentity-management-dev-nfs
+        - name: logfile-reports-dev-nfs
+          persistentVolumeClaim:
+            claimName: logfile-reports-dev-nfs
+        - name: logfile-settings-dev-nfs
+          persistentVolumeClaim:
+            claimName: logfile-settings-dev-nfs
+        - name: logfile-subscription-dev-nfs
+          persistentVolumeClaim:
+            claimName: logfile-subscription-dev-nfs
+        - name: logfile-vac-dev-nfs
+          persistentVolumeClaim:
+            claimName: logfile-vac-dev-nfs
+        - name: logfile-vbo-dev-nfs
+          persistentVolumeClaim:
+            claimName: logfile-vbo-dev-nfs
+            #- name: code-webms-dev
+            #persistentVolumeClaim:
+            #claimName: code-webms-dev
+        - name: webms-download-dev-nfs
+          persistentVolumeClaim:
+            claimName: webms-download-dev-nfs
+        - name: webms-uploads-dev-nfs
+          persistentVolumeClaim:
+            claimName: webms-uploads-dev-nfs
+
+     # nodeSelector:
+     #     systemtype: devenv

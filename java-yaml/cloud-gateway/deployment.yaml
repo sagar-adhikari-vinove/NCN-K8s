@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ot-java-cloud-gateway-deployment-dev
+  namespace: dev
+  labels:
+    app: java-cloud-gateway-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: java-cloud-gateway-dev
+  template:
+    metadata:
+      labels:
+        app: java-cloud-gateway-dev
+    spec:
+      securityContext:
+        runAsNonRoot: false
+      imagePullSecrets:
+        - name: my-registry-key1
+      initContainers:
+      - name: disable-tcp-timestamps
+        image: busybox
+        command: ["sysctl", "-w", "net.ipv4.tcp_timestamps=0"]
+        securityContext:
+          privileged: true
+      containers:
+        - name: java-cloud-gateway-dev
+          image: newcloudnetworks/dev-java-cloud-gateway:ot-latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 9195
+          securityContext:
+            capabilities:
+              drop:
+                - "ALL"
+              add:
+                - NET_ADMIN  # Add the NET_ADMIN capability
+                - CHOWN      # Add the CHOWN capability
+                - FOWNER
+                - DAC_OVERRIDE
+                - DAC_READ_SEARCH
+                - SETGID
+                - SETUID
+                - SYS_CHROOT
+                - SYS_NICE
+                - SYS_RESOURCE
+                - NET_BIND_SERVICE
+            allowPrivilegeEscalation: false          
+          resources:
+            limits:
+              cpu: "2"
+              memory: "2Gi"
+            requests:
+              cpu: "0.5"
+              memory: "512Mi"
+          env:
+            - name: SPRING_DATASOURCE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-db-url-ot
+                  key: url
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-db-user-ot
+                  key: db-user
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-db-password-ot
+                  key: db-password
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Creating scripts"
+              #echo "13.110.11.151   otava--otsfdev.sandbox.my.salesforce.com" >> /etc/hosts
+              # echo "40.99.172.130   smtp.office365.com" >> /etc/hosts
+              # echo "40.99.170.34    outlook.office365.com" >> /etc/hosts
+              #echo "3.129.3.171  sandbox.billingplatform.com" >> /etc/hosts
+              echo "java -Dspring.profiles.active=dev -jar ./*.jar" >> ./script.sh
+              echo "while true; do sleep 1d; done" >> ./script.sh
+              echo "apply 'chmod +x' to *.sh"
+              chmod +x ./script.sh
+              echo "execute script.sh now"
+              sh ./script.sh

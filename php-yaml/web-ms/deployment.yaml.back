@@ -1,0 +1,176 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ot-php-web-ms-dev-test
+  namespace: dev
+  labels:
+    app: php-web-ms-dev-test
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: php-web-ms-dev-test
+  template:
+    metadata:
+      labels:
+        app: php-web-ms-dev-test
+    spec:
+      securityContext:
+        runAsNonRoot: false
+      imagePullSecrets:
+        - name: my-registry-key1
+      initContainers:
+      - name: disable-tcp-timestamps
+        image: busybox
+        command: ["sysctl", "-w", "net.ipv4.tcp_timestamps=0"]
+        securityContext:
+          privileged: true
+      containers:
+        - name: php-web-ms-dev
+          image: newcloudnetworks/php-dev-web-ms:ot-latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          securityContext:
+            capabilities:
+              drop:
+                - "ALL"
+              add:
+                - NET_ADMIN  # Add the NET_ADMIN capability
+                - CHOWN      # Add the CHOWN capability
+                - FOWNER
+                - DAC_OVERRIDE
+                - DAC_READ_SEARCH
+                - SETGID
+                - SETUID
+                - SYS_CHROOT
+                - SYS_NICE
+                - SYS_RESOURCE
+                - NET_BIND_SERVICE
+                - KILL
+            allowPrivilegeEscalation: false
+          resources:
+            limits:
+              cpu: "2"
+              memory: "2Gi"
+            requests:
+              cpu: "0.5"
+              memory: "512Mi"
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "script"
+              #echo "40.99.172.130   smtp.office365.com" >> /etc/hosts
+              #echo "40.99.170.34    outlook.office365.com" >> /etc/hosts
+              sed -i 's+opscenter-sb+opscenter+g' app.conf
+              echo "cp env-dev .env" >> ./script.sh
+              echo "chown -R www-data:root storage/" >> ./script.sh
+              echo "cp app.conf /etc/apache2/sites-enabled/app.conf" >> ./script.sh
+              echo "service apache2 restart" >> ./script.sh
+              echo "while true; do sleep 1d; done" >> ./script.sh
+              echo "apply 'chmod +x' to *.sh"
+              chmod +x ./script.sh
+              echo "execute script now"
+              sh ./script.sh
+
+          volumeMounts:
+          - name: tmpfile-dev
+            mountPath: /tmp
+          - name: logfilewebms-dev
+            mountPath: /var/www/html/storage/logs
+          - mountPath: /var/log/apache2
+            name: apachewebms-dev
+          - mountPath: /var/log/microservice/apache/gateway
+            name: apachewebms-dev
+          - mountPath: /var/log/microservice/apache/subscription
+            name: apache-phpsubscription-dev
+          - mountPath: /var/log/microservice/apache/entity
+            name: apacheentity-management-dev
+          - mountPath: /var/log/microservice/apache/report
+            name: apachereports-dev
+          - mountPath: /var/log/microservice/apache/settings
+            name: apachesettings-dev
+          - mountPath: /var/log/microservice/apache/vac
+            name: apachevac-dev
+          - mountPath: /var/log/microservice/apache/vbo
+            name: apachevbo-dev
+          - mountPath: /var/log/microservice/log/vbo
+            name: logfilevbo-dev
+          - mountPath: /var/log/microservice/log/vac
+            name: logfilevac-dev
+          - mountPath: /var/log/microservice/log/subscription
+            name: logfile-phpsubscription-dev
+          - mountPath: /var/log/microservice/log/settings
+            name: logfilesettings-dev
+          - mountPath: /var/log/microservice/log/report
+            name: logfilereports-dev
+          - mountPath: /var/log/microservice/log/entity
+            name: logfileentity-management-dev
+            #- mountPath: /var/www/html/app/Http
+            #name: code-webms-dev
+          - mountPath: /var/www/html/public/downloads
+            name: webms-download-dev
+          - mountPath: /var/www/html/public/uploads
+            name: webms-uploads-dev
+
+
+
+      volumes:
+        - name: tmpfile-dev
+          persistentVolumeClaim:
+            claimName: tmpfile-dev
+        - name: logfilewebms-dev
+          persistentVolumeClaim:
+            claimName: logfilewebms-dev
+        - name: apachewebms-dev
+          persistentVolumeClaim:
+            claimName: apachewebms-dev
+        - name: apache-phpsubscription-dev
+          persistentVolumeClaim:
+            claimName: apache-phpsubscription-dev
+        - name: apacheentity-management-dev
+          persistentVolumeClaim:
+            claimName: apacheentity-management-dev
+        - name: apachereports-dev
+          persistentVolumeClaim:
+            claimName: apachereports-dev
+        - name: apachesettings-dev
+          persistentVolumeClaim:
+            claimName: apachesettings-dev
+        - name: apachevac-dev
+          persistentVolumeClaim:
+            claimName: apachevac-dev
+        - name: apachevbo-dev
+          persistentVolumeClaim:
+            claimName: apachevbo-dev
+        - name: logfileentity-management-dev
+          persistentVolumeClaim:
+            claimName: logfileentity-management-dev
+        - name: logfilereports-dev
+          persistentVolumeClaim:
+            claimName: logfilereports-dev
+        - name: logfilesettings-dev
+          persistentVolumeClaim:
+            claimName: logfilesettings-dev
+        - name: logfile-phpsubscription-dev
+          persistentVolumeClaim:
+            claimName: logfile-phpsubscription-dev
+        - name: logfilevac-dev
+          persistentVolumeClaim:
+            claimName: logfilevac-dev
+        - name: logfilevbo-dev
+          persistentVolumeClaim:
+            claimName: logfilevbo-dev
+            #- name: code-webms-dev
+            #persistentVolumeClaim:
+            #claimName: code-webms-dev
+        - name: webms-download-dev
+          persistentVolumeClaim:
+            claimName: webms-download-dev
+        - name: webms-uploads-dev
+          persistentVolumeClaim:
+            claimName: webms-uploads-dev
+
+     # nodeSelector:
+     #     systemtype: devenv

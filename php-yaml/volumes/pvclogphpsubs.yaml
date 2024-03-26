@@ -1,0 +1,13 @@
+
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: logfile-phpsubscription-dev
+  namespace: dev
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: logfile-phpsubscription-dev
+  resources:
+    requests:
+      storage: 1Gi

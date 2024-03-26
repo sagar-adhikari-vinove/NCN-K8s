@@ -1,0 +1,150 @@
+mysqldump started at 02-03-2024 01:00:01
+mysqldump finished at 02-03-2024 01:00:19
+file permission changed
+old files deleted
+operation finished at 02-03-2024 01:00:19
+*****************
+mysqldump started at 03-03-2024 01:00:01
+mysqldump finished at 03-03-2024 01:00:18
+file permission changed
+old files deleted
+operation finished at 03-03-2024 01:00:18
+*****************
+mysqldump started at 04-03-2024 01:00:01
+mysqldump finished at 04-03-2024 01:00:18
+file permission changed
+old files deleted
+operation finished at 04-03-2024 01:00:18
+*****************
+mysqldump started at 05-03-2024 01:00:01
+mysqldump finished at 05-03-2024 01:00:19
+file permission changed
+old files deleted
+operation finished at 05-03-2024 01:00:19
+*****************
+mysqldump started at 06-03-2024 01:00:01
+mysqldump finished at 06-03-2024 01:00:17
+file permission changed
+old files deleted
+operation finished at 06-03-2024 01:00:17
+*****************
+mysqldump started at 07-03-2024 01:00:01
+mysqldump finished at 07-03-2024 01:00:18
+file permission changed
+old files deleted
+operation finished at 07-03-2024 01:00:18
+*****************
+mysqldump started at 08-03-2024 01:00:01
+mysqldump finished at 08-03-2024 01:00:18
+file permission changed
+old files deleted
+operation finished at 08-03-2024 01:00:18
+*****************
+mysqldump started at 09-03-2024 01:00:01
+mysqldump finished at 09-03-2024 01:00:18
+file permission changed
+old files deleted
+operation finished at 09-03-2024 01:00:18
+*****************
+mysqldump started at 10-03-2024 01:00:01
+mysqldump finished at 10-03-2024 01:00:17
+file permission changed
+old files deleted
+operation finished at 10-03-2024 01:00:17
+*****************
+mysqldump started at 11-03-2024 01:00:01
+mysqldump finished at 11-03-2024 01:00:17
+file permission changed
+old files deleted
+operation finished at 11-03-2024 01:00:17
+*****************
+mysqldump started at 12-03-2024 01:00:01
+mysqldump finished at 12-03-2024 01:00:18
+file permission changed
+old files deleted
+operation finished at 12-03-2024 01:00:18
+*****************
+mysqldump started at 13-03-2024 01:00:01
+mysqldump finished at 13-03-2024 01:00:18
+file permission changed
+old files deleted
+operation finished at 13-03-2024 01:00:18
+*****************
+mysqldump started at 14-03-2024 01:00:01
+mysqldump finished at 14-03-2024 01:00:18
+file permission changed
+old files deleted
+operation finished at 14-03-2024 01:00:18
+*****************
+mysqldump started at 15-03-2024 01:00:01
+mysqldump finished at 15-03-2024 01:00:17
+file permission changed
+old files deleted
+operation finished at 15-03-2024 01:00:17
+*****************
+mysqldump started at 16-03-2024 01:00:02
+mysqldump finished at 16-03-2024 01:00:18
+file permission changed
+old files deleted
+operation finished at 16-03-2024 01:00:18
+*****************
+mysqldump started at 17-03-2024 01:00:01
+mysqldump finished at 17-03-2024 01:00:17
+file permission changed
+old files deleted
+operation finished at 17-03-2024 01:00:17
+*****************
+mysqldump started at 18-03-2024 01:00:01
+mysqldump finished at 18-03-2024 01:00:19
+file permission changed
+old files deleted
+operation finished at 18-03-2024 01:00:19
+*****************
+mysqldump started at 19-03-2024 01:00:01
+mysqldump finished at 19-03-2024 01:00:17
+file permission changed
+old files deleted
+operation finished at 19-03-2024 01:00:17
+*****************
+mysqldump started at 20-03-2024 01:00:01
+mysqldump finished at 20-03-2024 01:00:18
+file permission changed
+old files deleted
+operation finished at 20-03-2024 01:00:18
+*****************
+mysqldump started at 21-03-2024 01:00:01
+mysqldump finished at 21-03-2024 01:00:18
+file permission changed
+old files deleted
+operation finished at 21-03-2024 01:00:18
+*****************
+mysqldump started at 22-03-2024 01:00:01
+mysqldump finished at 22-03-2024 01:00:18
+file permission changed
+old files deleted
+operation finished at 22-03-2024 01:00:18
+*****************
+mysqldump started at 23-03-2024 01:00:01
+mysqldump finished at 23-03-2024 01:00:18
+file permission changed
+old files deleted
+operation finished at 23-03-2024 01:00:18
+*****************
+mysqldump started at 24-03-2024 01:00:01
+mysqldump finished at 24-03-2024 01:00:19
+file permission changed
+old files deleted
+operation finished at 24-03-2024 01:00:19
+*****************
+mysqldump started at 25-03-2024 01:00:01
+mysqldump finished at 25-03-2024 01:00:18
+file permission changed
+old files deleted
+operation finished at 25-03-2024 01:00:18
+*****************
+mysqldump started at 26-03-2024 01:00:01
+mysqldump finished at 26-03-2024 01:00:17
+file permission changed
+old files deleted
+operation finished at 26-03-2024 01:00:17
+*****************

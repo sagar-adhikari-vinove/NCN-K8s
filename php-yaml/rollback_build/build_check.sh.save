@@ -1,0 +1,30 @@
+#!/bin/bash
+
+check_build() {
+    service=$1
+
+    curl_response=$(kubectl exec -it curl-test-pod -n dev -- curl -s -o /dev/null -w "%{http_code}" "http://$service")
+    echo $curl_response
+
+    if [ "$curl_response" = "200" ] || [ "$curl_response" = "401" ]; then
+        echo "php $service service is up and running"
+    else
+        echo "$service IS DOWN"
+        exit 1
+    fi
+}
+
+sleep 5m
+check_build "ot-php-web-ms-svc-dev"
+sleep 1m
+check_build "ot-php-reports-svc-dev"
+sleep 10s
+check_build "ot-php-settings-svc-dev"
+sleep 15s
+check_build "ot-php-reports-svc-dev"
+#sleep 10s
+check_build "ot-php-subscription-svc-dev"
+#sleep 10s
+check_build "ot-php-vac-svc-dev"
+#sleep 10s
+check_build "ot-php-vbo-svc-dev"

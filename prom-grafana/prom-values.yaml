@@ -1,0 +1,345 @@
+affinity: {}
+annotations: {}
+config:
+  clients:
+  - url: http://loki-loki-distributed-gateway/loki/api/v1/push
+  enableTracing: false
+  enabled: true
+  file: |
+    server:
+      log_level: {{ .Values.config.logLevel }}
+      log_format: {{ .Values.config.logFormat }}
+      http_listen_port: {{ .Values.config.serverPort }}
+      {{- with .Values.httpPathPrefix }}
+      http_path_prefix: {{ . }}
+      {{- end }}
+      {{- tpl .Values.config.snippets.extraServerConfigs . | nindent 2 }}
+
+    clients:
+      {{- tpl (toYaml .Values.config.clients) . | nindent 2 }}
+
+    positions:
+      {{- tpl (toYaml .Values.config.positions) . | nindent 2 }}
+
+    scrape_configs:
+      {{- tpl .Values.config.snippets.scrapeConfigs . | nindent 2 }}
+      {{- tpl .Values.config.snippets.extraScrapeConfigs . | nindent 2 }}
+
+    limits_config:
+      {{- tpl .Values.config.snippets.extraLimitsConfig . | nindent 2 }}
+
+    tracing:
+      enabled: {{ .Values.config.enableTracing }}
+  logFormat: logfmt
+  logLevel: info
+  positions:
+    filename: /run/promtail/positions.yaml
+  serverPort: 3101
+  snippets:
+    addScrapeJobLabel: false
+    extraLimitsConfig: ""
+    extraRelabelConfigs: []
+    extraScrapeConfigs: ""
+    extraServerConfigs: ""
+    scrapeConfigs: |
+      # See also https://github.com/grafana/loki/blob/master/production/ksonnet/promtail/scrape_config.libsonnet for reference
+      - job_name: system
+        static_configs:
+        - targets:
+          - localhost
+          labels:
+            job: varlogs
+            __path__: /var/log/syslog
+      - job_name: dev-entity-management-php-log
+        static_configs:
+        - targets:
+          - localhost
+          labels:
+            job: dev-entity-management-php-log
+            __path__: /var/log/php/entity-management/*log
+            __path_exclude__: /var/log/php/apache/entity-management/modsec_audit.log
+      - job_name: dev-reports-php-log
+        static_configs:
+        - targets:
+          - localhost
+          labels:
+            job: dev-reports-php-log
+            __path__: /var/log/php/reports/*log
+            __path_exclude__: /var/log/php/apache/reports/modsec_audit.log
+      - job_name: dev-settings-php-log
+        static_configs:
+        - targets:
+          - localhost
+          labels:
+            job: dev-settings-php-log
+            __path__: /var/log/php/settings/*log
+            __path_exclude__: /var/log/php/apache/settings/modsec_audit.log
+      - job_name: dev-subscription-php-log
+        static_configs:
+        - targets:
+          - localhost
+          labels:
+            job: dev-subscription-php-log
+            __path__: /var/log/php/subscription/*log
+            __path_exclude__: /var/log/php/apache/subscription/modsec_audit.log
+      - job_name: dev-vac-php-log
+        static_configs:
+        - targets:
+          - localhost
+          labels:
+            job: dev-vac-php-log
+            __path__: /var/log/php/vac/*log
+            __path_exclude__: /var/log/php/apache/vac/modsec_audit.log
+      - job_name: dev-vbo-php-log
+        static_configs:
+        - targets:
+          - localhost
+          labels:
+            job: dev-vbo-php-log
+            __path__: /var/log/php/vbo/*log
+            __path_exclude__: /var/log/php/apache/vbo/modsec_audit.log
+      - job_name: dev-webms-php-log
+        static_configs:
+        - targets:
+          - localhost
+          labels:
+            job: dev-webms-php-log
+            __path__: /var/log/php/webms/*log
+            __path_exclude__: /var/log/php/apache/webms/modsec_audit.log
+      - job_name: dev-contact-java-log
+        static_configs:
+        - targets:
+          - localhost
+          labels:
+            job: dev-contact-java-log
+            __path__: /var/log/java/contact/*log
+      - job_name: dev-customer-java-log
+        static_configs:
+        - targets:
+          - localhost
+          labels:
+            job: dev-customer-java-log
+            __path__: /var/log/java/customer/*log
+      - job_name: dev-partner-java-log
+        static_configs:
+        - targets:
+          - localhost
+          labels:
+            job: dev-partner-java-log
+            __path__: /var/log/java/partner/*log
+      - job_name: dev-product-java-log
+        static_configs:
+        - targets:
+          - localhost
+          labels:
+            job: dev-product-java-log
+            __path__: /var/log/java/product/*log
+      - job_name: dev-subscription-java-log
+        static_configs:
+        - targets:
+          - localhost
+          labels:
+            job: dev-subscription-java-log
+            __path__: /var/log/java/subscription/*log
+      - job_name: dev-k8s-audit-logs
+        static_configs:
+        - targets:
+          - localhost
+          labels:
+            job: dev-k8s-audit-logs
+            __path__: /var/log/kubernetes/audit/audit.log
+configmap:
+  enabled: false
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: true
+daemonset:
+  autoscaling:
+    controlledResources: []
+    enabled: false
+    maxAllowed: {}
+    minAllowed: {}
+  enabled: true
+defaultVolumeMounts:
+- mountPath: /run/promtail
+  name: run
+- mountPath: /var/lib/docker/containers
+  name: containers
+  readOnly: true
+- mountPath: /var/log/pods
+  name: pods
+  readOnly: true
+defaultVolumes:
+- hostPath:
+    path: /run/promtail
+  name: run
+- hostPath:
+    path: /var/lib/docker/containers
+  name: containers
+- hostPath:
+    path: /var/log/pods
+  name: pods
+deployment:
+  autoscaling:
+    enabled: false
+    maxReplicas: 10
+    minReplicas: 1
+    strategy:
+      type: RollingUpdate
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: null
+  enabled: false
+  replicaCount: 1
+enableServiceLinks: true
+extraArgs: []
+extraContainers: {}
+extraEnv: []
+extraEnvFrom: []
+extraObjects: []
+extraPorts: {}
+extraVolumeMounts:
+- mountPath: /var/log/java
+  name: java
+  readOnly: true
+- mountPath: /var/log/php
+  name: php
+  readOnly: true
+- mountPath: /var/log/kubernetes
+  name: audit-logs
+  readOnly: true
+extraVolumes:
+- hostPath:
+    path: /var/log/java
+  name: java
+- hostPath:
+    path: /var/log/php
+  name: php
+- hostPath:
+    path: /var/log/kubernetes
+  name: audit-logs
+fullnameOverride: null
+global:
+  imagePullSecrets: []
+  imageRegistry: ""
+hostAliases: []
+hostNetwork: null
+httpPathPrefix: ""
+image:
+  pullPolicy: IfNotPresent
+  registry: docker.io
+  repository: grafana/promtail
+  tag: null
+imagePullSecrets: []
+initContainer: []
+livenessProbe: {}
+nameOverride: null
+namespace: null
+networkPolicy:
+  enabled: false
+  k8sApi:
+    cidrs: []
+    port: 8443
+  metrics:
+    cidrs: []
+    namespaceSelector: {}
+    podSelector: {}
+podAnnotations: {}
+podLabels: {}
+podSecurityContext:
+  runAsGroup: 0
+  runAsUser: 0
+podSecurityPolicy:
+  allowPrivilegeEscalation: true
+  fsGroup:
+    rule: RunAsAny
+  hostIPC: false
+  hostNetwork: false
+  hostPID: false
+  privileged: true
+  readOnlyRootFilesystem: true
+  requiredDropCapabilities:
+  - ALL
+  runAsUser:
+    rule: RunAsAny
+  seLinux:
+    rule: RunAsAny
+  supplementalGroups:
+    rule: RunAsAny
+  volumes:
+  - secret
+  - hostPath
+  - downwardAPI
+priorityClassName: null
+rbac:
+  create: true
+  pspEnabled: false
+readinessProbe:
+  failureThreshold: 5
+  httpGet:
+    path: '{{ printf `%s/ready` .Values.httpPathPrefix }}'
+    port: http-metrics
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  successThreshold: 1
+  timeoutSeconds: 1
+resources: {}
+secret:
+  annotations: {}
+  labels: {}
+serviceAccount:
+  annotations: {}
+  create: true
+  imagePullSecrets: []
+  name: null
+serviceMonitor:
+  annotations: {}
+  enabled: false
+  interval: null
+  labels: {}
+  metricRelabelings: []
+  namespace: null
+  namespaceSelector: {}
+  prometheusRule:
+    additionalLabels: {}
+    enabled: false
+    rules: []
+  relabelings: []
+  scheme: http
+  scrapeTimeout: null
+  targetLabels: []
+  tlsConfig: null
+sidecar:
+  configReloader:
+    config:
+      serverPort: 9533
+    containerSecurityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+      readOnlyRootFilesystem: true
+    enabled: false
+    extraArgs: []
+    extraEnv: []
+    extraEnvFrom: []
+    image:
+      pullPolicy: IfNotPresent
+      registry: docker.io
+      repository: jimmidyson/configmap-reload
+      tag: v0.8.0
+    livenessProbe: {}
+    readinessProbe: {}
+    resources: {}
+    serviceMonitor:
+      enabled: true
+tolerations:
+- effect: NoSchedule
+  key: node-role.kubernetes.io/master
+  operator: Exists
+- effect: NoSchedule
+  key: node-role.kubernetes.io/control-plane
+  operator: Exists
+updateStrategy: {}

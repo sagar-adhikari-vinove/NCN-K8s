@@ -1,0 +1,88 @@
+prometheus:
+  server:
+    persistentVolume:
+      enabled: true
+  prometheusSpec:
+    externalUrl: http://216.71.167.152/prometheus
+    serviceMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorSelector: {}
+    serviceMonitorNamespaceSelector: {}
+    retention: 7d
+    retentionSize: 10GB
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          storageClassName: local-path
+          resources:
+            requests:
+              storage: 2Gi
+kubeScheduler:
+  enabled: false
+# Define persistent storage for Alertmanager (PVC)
+alertmanager:
+  alertmanagerSpec:
+    storage:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          storageClassName: local-path
+          resources:
+            requests:
+              storage: 2Gi
+grafana:
+  sidecar:
+    datasources:
+      defaultDatasourceEnabled: true
+  additionalDataSources:
+    - name: Loki
+      type: loki
+      url: http://loki-loki-distributed-query-frontend.monitoring:3100
+  persistence:
+    enabled: true
+    storageClassName: local-path
+    accessModes: ["ReadWriteOnce"]
+    size: 2Gi
+
+  grafana.ini:
+    smtp:
+      enabled: true
+      host: smtp.office365.com:587
+      user: opscenter@otava.com
+      password: 86^lUZ74YVBu
+      cert_file:
+      key_file:
+      from_address: opscenter@otava.com
+      from_name: Grafana
+      skip_verify: false
+      ehlo_identity:
+      startTLS_policy:
+
+alertmanager:
+  config:
+      global:
+        resolve_timeout: 5m
+      route:
+        group_by: ['alertname']
+        group_wait: 30s
+        group_interval: 5m
+        repeat_interval: 24h
+        receiver: gmail
+        routes:
+        - receiver: gmail
+          matchers:
+            - alertname =~ "TargetDown"
+         # match:
+         #   severity: 'critical'
+      receivers:
+      - name: gmail
+        email_configs:
+        - to: sadhikari@otava.tech, pchandra@otava.tech, rkumar@otava.tech
+          from: opscenter@otava.com
+          smarthost: smtp.office365.com:587
+          auth_username: opscenter@otava.com
+          auth_identity: opscenter@otava.com
+          auth_password: 86^lUZ74YVBu
+          send_resolved: true
+      templates:
+      - '/etc/alertmanager/config/*.tmpl'

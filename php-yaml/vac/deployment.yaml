@@ -1,0 +1,96 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ot-php-vac-dev
+  namespace: dev
+  labels:
+    app: php-vac-dev
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: php-vac-dev
+  template:
+    metadata:
+      labels:
+        app: php-vac-dev
+    spec:
+      affinity:  # Add anti-affinity rule
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - php-vac-dev
+            topologyKey: kubernetes.io/hostname
+      securityContext:
+        runAsNonRoot: false
+      imagePullSecrets:
+        - name: my-registry-key1
+      initContainers:
+      - name: disable-tcp-timestamps
+        image: busybox
+        command: ["sysctl", "-w", "net.ipv4.tcp_timestamps=0"]
+        securityContext:
+          privileged: true
+      containers:
+        - name: ncn-php-vac-dev
+          image: newcloudnetworks/php-dev-vac:ot-latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          securityContext:
+            capabilities:
+              drop:
+                - "ALL"
+              add:
+                - NET_ADMIN  # Add the NET_ADMIN capability
+                - CHOWN      # Add the CHOWN capability
+                - FOWNER
+                - DAC_OVERRIDE
+                - DAC_READ_SEARCH
+                - SETGID
+                - SETUID
+                - SYS_CHROOT
+                - SYS_NICE
+                - SYS_RESOURCE
+                - NET_BIND_SERVICE
+                - KILL
+            allowPrivilegeEscalation: false
+          resources:
+            limits:
+              cpu: "2"
+              memory: "1Gi"
+            requests:
+              cpu: "0.5"
+              memory: "512Mi"
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "script"
+              #echo "40.99.172.130   smtp.office365.com" >> /etc/hosts
+              #echo "40.99.170.34    outlook.office365.com" >> /etc/hosts
+              echo "cp env-dev .env" >> ./script.sh
+              echo "chown -R www-data:root storage/" >> ./script.sh
+              echo "while true; do sleep 1d; done" >> ./script.sh
+              echo "apply 'chmod +x' to *.sh"
+              chmod +x ./script.sh
+              echo "execute script now"
+              sh ./script.sh
+
+          volumeMounts:
+          - mountPath: /var/www/html/storage/logs
+            name: logfile-vac-dev-nfs
+          - mountPath: /var/log/apache2
+            name: apache-vac-dev-nfs
+      volumes:
+      - name: logfile-vac-dev-nfs
+        persistentVolumeClaim:
+          claimName: logfile-vac-dev-nfs
+      - name: apache-vac-dev-nfs
+        persistentVolumeClaim:
+          claimName: apache-vac-dev-nfs
+   

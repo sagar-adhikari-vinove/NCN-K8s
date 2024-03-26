@@ -1,0 +1,239 @@
+--- # Daemonset.yaml
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: promtail-daemonset
+spec:
+  selector:
+    matchLabels:
+      name: promtail
+  template:
+    metadata:
+      labels:
+        name: promtail
+    spec:
+      serviceAccount: promtail-serviceaccount
+      containers:
+      - name: promtail-container
+        image: grafana/promtail
+        args:
+        - -config.file=/etc/promtail/promtail.yaml
+        env:
+        - name: 'HOSTNAME' # needed when using kubernetes_sd_configs
+          valueFrom:
+            fieldRef:
+              fieldPath: 'spec.nodeName'
+        volumeMounts:
+        - name: logs
+          mountPath: /var/log
+        - name: promtail-config
+          mountPath: /etc/promtail
+        - name: kubernetes-policy
+          mountPath: /etc/kubernetes
+        - mountPath: /var/lib/docker/containers
+          name: varlibdockercontainers
+          readOnly: true
+        - mountPath: /data/nfs
+          name: nfslog
+        - mountPath: /var/log/kubernetes
+          name: auditlogs
+          readOnly: true
+      volumes:
+      - name: logs
+        hostPath:
+          path: /var/log
+      - name: kubernetes-policy
+        hostPath:
+          path: /etc/kubernetes
+      - name: varlibdockercontainers
+        hostPath:
+          path: /var/lib/docker/containers
+      - name: nfslog
+        hostPath:
+          path: /data/nfs
+      - name: auditlogs
+        hostPath:
+          path: /var/log/kubernetes
+      - name: promtail-config
+        configMap:
+          name: promtail-config
+--- # configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: promtail-config
+data:
+  promtail.yaml: |
+    server:
+      http_listen_port: 9080
+      grpc_listen_port: 0
+
+    clients:
+    - url: http://10.20.1.101:3100/loki/api/v1/push
+
+    positions:
+      filename: /tmp/positions.yaml
+    target_config:
+      sync_period: 10s
+    scrape_configs:
+      - job_name: system
+        static_configs:
+        - targets:
+          - localhost
+          labels:
+            job: varlogs
+            __path__: /var/log/syslog
+      - job_name: dev-entity-management-php-log
+        static_configs:
+        - targets:
+          - localhost
+          labels:
+            job: dev-entity-management-php-log
+            __path__: /data/nfs/var/log/php/apache/entity-management/*log
+        - targets:
+          - localhost
+          labels:
+            job: dev-entity-management-php-log
+            __path__: /data/nfs/var/log/php/entity-management/*log
+      - job_name: dev-reports-php-log
+        static_configs:
+        - targets:
+          - localhost
+          labels:
+            job: dev-reports-php-log
+            __path__: /data/nfs/var/log/php/reports/*log
+        - targets:
+          - localhost
+          labels:
+            job: dev-reports-php-log
+            __path__: /data/nfs/var/log/php/apache/reports/*log
+      - job_name: dev-settings-php-log
+        static_configs:
+        - targets:
+          - localhost
+          labels:
+            job: dev-settings-php-log
+            __path__: /data/nfs/var/log/php/settings/*log
+        - targets:
+          - localhost
+          labels:
+            job: dev-settings-php-log
+            __path__: /data/nfs/var/log/php/apache/settings/*log
+      - job_name: dev-subscription-php-log
+        static_configs:
+        - targets:
+          - localhost
+          labels:
+            job: dev-subscription-php-log
+            __path__: /data/nfs/var/log/php/subscription/*log
+        - targets:
+          - localhost
+          labels:
+            job: dev-subscription-php-log
+            __path__: /data/nfs/var/log/php/apache/subscription/*log
+      - job_name: dev-vac-php-log
+        static_configs:
+        - targets:
+          - localhost
+          labels:
+            job: dev-vac-php-log
+            __path__: /data/nfs/var/log/php/vac/*log
+        - targets:
+          - localhost
+          labels:
+            job: dev-vac-php-log
+            __path__: /data/nfs/var/log/php/apache/vac/*log
+      - job_name: dev-vbo-php-log
+        static_configs:
+        - targets:
+          - localhost
+          labels:
+            job: dev-vbo-php-log
+            __path__: /data/nfs/var/log/php/vbo/*log
+        - targets:
+          - localhost
+          labels:
+            job: dev-vbo-php-log
+            __path__: /data/nfs/var/log/php/apache/vbo/*log
+      - job_name: dev-webms-php-log
+        static_configs:
+        - targets:
+          - localhost
+          labels:
+            job: dev-webms-php-log
+            __path__: /data/nfs/var/log/php/webms/*log
+        - targets:
+          - localhost
+          labels:
+            job: dev-webms-php-log
+            __path__: /data/nfs/var/log/php/apache/webms/*log
+      - job_name: dev-contact-java-log
+        static_configs:
+        - targets:
+          - localhost
+          labels:
+            job: dev-contact-java-log
+            __path__: /data/nfs/var/log/java/contact/*log
+      - job_name: dev-customer-java-log
+        static_configs:
+        - targets:
+          - localhost
+          labels:
+            job: dev-customer-java-log
+            __path__: /data/nfs/var/log/java/customer/*log
+      - job_name: dev-partner-java-log
+        static_configs:
+        - targets:
+          - localhost
+          labels:
+            job: dev-partner-java-log
+            __path__: /data/nfs/var/log/java/partner/*log
+      - job_name: dev-product-java-log
+        static_configs:
+        - targets:
+          - localhost
+          labels:
+            job: dev-product-java-log
+            __path__: /data/nfs/var/log/java/product/*log
+      - job_name: dev-subscription-java-log
+        static_configs:
+        - targets:
+          - localhost
+          labels:
+            job: dev-subscription-java-log
+            __path__: /data/nfs/var/log/java/subscription/*log
+--- # Clusterrole.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: promtail-clusterrole
+rules:
+  - apiGroups: [""]
+    resources:
+    - nodes
+    - services
+    - pods
+    verbs:
+    - get
+    - watch
+    - list
+
+--- # ServiceAccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: promtail-serviceaccount
+
+--- # Rolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: promtail-clusterrolebinding
+subjects:
+    - kind: ServiceAccount
+      name: promtail-serviceaccount
+      namespace: default
+roleRef:
+    kind: ClusterRole
+    name: promtail-clusterrole
+    apiGroup: rbac.authorization.k8s.io

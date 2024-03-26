@@ -1,0 +1,14 @@
+[High level Failures]:
+4.1.1 Ensure that the kubelet service file permissions are set to 644 or more restrictive
+4.1.2 Ensure that the kubelet service file ownership is set to root:root
+4.1.3 Ensure that the proxy kubeconfig file permissions are set to 644 or more restrictive
+4.1.7 Ensure that the certificate authorities file permissions are set to 644 or more restrictive
+4.1.9 Ensure that the kubelet --config configuration file has permissions set to 644 or more restrictive
+4.2.1 Ensure that the anonymous-auth argument is set to false
+4.2.2 Ensure that the --authorization-mode argument is not set to AlwaysAllow
+4.2.3 Ensure that the --client-ca-file argument is set as appropriate
+4.2.4 Ensure that the --read-only-port argument is set to 0
+4.2.5 Ensure that the --streaming-connection-idle-timeout argument is not set to 0
+4.2.6 Ensure that the --protect-kernel-defaults argument is set to true
+4.2.7 Ensure that the --make-iptables-util-chains argument is set to true
+4.2.10 Ensure that the --tls-cert-file and --tls-private-key-file arguments are set as appropriate

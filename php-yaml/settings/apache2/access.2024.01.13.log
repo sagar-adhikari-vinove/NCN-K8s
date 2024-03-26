@@ -1,0 +1,2 @@
+100.96.1.161 - - [13/Jan/2024:14:09:10 +0000] "GET /api/settings/me?version=1.39.4&request_data_json= HTTP/1.1" 200 5464 "-" "GuzzleHttp/7"
+100.96.1.161 - - [13/Jan/2024:14:09:10 +0000] "GET /api/settings/permissions/me?version=1.39.4&request_data_json= HTTP/1.1" 200 53421 "-" "GuzzleHttp/7"

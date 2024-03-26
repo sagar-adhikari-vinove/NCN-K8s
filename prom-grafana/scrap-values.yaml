@@ -1,0 +1,22 @@
+prometheus:
+  server:
+    persistentVolume:
+      enabled: true
+  prometheusSpec:
+    additionalScrapeConfigs: |
+      - job_name: dev-java-metrics
+        metrics_path: '/actuator/prometheus'
+        static_configs:
+          - targets:
+            - 'api-dev.otava.com:443'
+        scheme: https
+        tls_config:
+          insecure_skip_verify: true
+      - job_name: dev-php-metrics
+        metrics_path: '/api/metrics'
+        static_configs:
+          - targets:
+            - 'cpanel-ws-dev.otava.com:443'
+        scheme: https
+        tls_config:
+          insecure_skip_verify: true 

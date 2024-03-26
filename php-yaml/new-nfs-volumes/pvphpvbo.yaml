@@ -1,0 +1,16 @@
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: logfile-vbo-dev-nfs
+  namespace: dev
+  labels:
+    app: logfile-vbo-dev-nfs
+spec:
+  capacity:
+    storage: 2Gi
+  accessModes:
+    - ReadWriteMany
+  nfs:
+    server: 100.71.96.72
+    path: "/var/log/php/vbo"
+

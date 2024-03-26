@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+ name: ot-pasco-customer-web-svc-dev
+ namespace: dev
+ labels:
+   app: ncnpasco-customer-web-dev
+spec:
+ type: ClusterIP
+ ports:
+ - name: http
+   protocol: TCP
+   port: 31197
+   targetPort: 31197
+ selector:
+   app: ncnpasco-customer-web-dev

@@ -1,0 +1,15 @@
+PHP Warning:  PHP Startup: Unable to load dynamic library 'php_intl.dll' (tried: /usr/lib/php/20210902/php_intl.dll (/usr/lib/php/20210902/php_intl.dll: cannot open shared object file: No such file or directory), /usr/lib/php/20210902/php_intl.dll.so (/usr/lib/php/20210902/php_intl.dll.so: cannot open shared object file: No such file or directory)) in Unknown on line 0
+[Wed Jan 17 13:25:03.149713 2024] [mpm_prefork:notice] [pid 68] AH00163: Apache/2.4.41 (Ubuntu) configured -- resuming normal operations
+[Wed Jan 17 13:25:03.149988 2024] [core:notice] [pid 68] AH00094: Command line: '/usr/sbin/apache2'
+[Wed Jan 17 13:25:09.916460 2024] [:notice] [pid 222] ModSecurity for Apache/2.9.3 (http://www.modsecurity.org/) configured.
+[Wed Jan 17 13:25:09.916575 2024] [:notice] [pid 222] ModSecurity: APR compiled version="1.6.5"; loaded version="1.6.5"
+[Wed Jan 17 13:25:09.916579 2024] [:notice] [pid 222] ModSecurity: PCRE compiled version="8.39 "; loaded version="8.39 2016-06-14"
+[Wed Jan 17 13:25:09.916582 2024] [:notice] [pid 222] ModSecurity: LUA compiled version="Lua 5.1"
+[Wed Jan 17 13:25:09.916584 2024] [:notice] [pid 222] ModSecurity: YAJL compiled version="2.1.0"
+[Wed Jan 17 13:25:09.916586 2024] [:notice] [pid 222] ModSecurity: LIBXML compiled version="2.9.10"
+[Wed Jan 17 13:25:09.916588 2024] [:notice] [pid 222] ModSecurity: Original server signature: Apache
+[Wed Jan 17 13:25:09.916644 2024] [:notice] [pid 222] ModSecurity: StatusEngine call: "2.9.3,Apache,1.6.5/1.6.5,8.39/8.39 2016-06-14,Lua 5.1,2.9.10,d882544c8517774e3b6762072896616615e4deb1"
+[Wed Jan 17 13:25:13.423057 2024] [:notice] [pid 222] ModSecurity: StatusEngine call failed. Query: GIXDSLRTFRAXAYLDNBSSYMJOGYXDKLZR.FY3C4NJMHAXDGOJPHAXDGOJAGIYDCNRN.GA3C2MJUFRGHKYJAGUXDCLBSFY4S4MJQ.FRSDQOBSGU2DIYZYGUYTONZXGRSTGYRW.G43DEMBXGI4DSNRWGE3DMMJVMU2GIZLC.GE.1705497909.status.modsecurity.org
+PHP Warning:  PHP Startup: Unable to load dynamic library 'php_intl.dll' (tried: /usr/lib/php/20210902/php_intl.dll (/usr/lib/php/20210902/php_intl.dll: cannot open shared object file: No such file or directory), /usr/lib/php/20210902/php_intl.dll.so (/usr/lib/php/20210902/php_intl.dll.so: cannot open shared object file: No such file or directory)) in Unknown on line 0
+[Wed Jan 17 13:25:13.549254 2024] [mpm_prefork:notice] [pid 225] AH00163: Apache/2.4.41 (Ubuntu) OCP configured -- resuming normal operations
+[Wed Jan 17 13:25:13.549292 2024] [core:notice] [pid 225] AH00094: Command line: '/usr/sbin/apache2'

@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+ name: ot-php-entity-management-svc-dev
+ namespace: dev
+ labels:
+   app: php-entity-management-dev
+spec:
+ type: ClusterIP
+ ports:
+ - name: http
+   protocol: TCP
+   port: 80
+   targetPort: 80
+ selector:
+   app: php-entity-management-dev

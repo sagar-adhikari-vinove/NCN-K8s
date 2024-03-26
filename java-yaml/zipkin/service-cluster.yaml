@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ot-zipkin-svc-dev
+  namespace: dev
+  labels:
+    app: ncnzipkin-dev
+spec:
+  type: ClusterIP  # Change the type to ClusterIP
+  ports:
+  - name: http
+    protocol: TCP
+    port: 9411
+    targetPort: 9411
+  selector:
+    app: ncnzipkin-dev

@@ -1,0 +1,15 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: tmpfile-dev
+  namespace: dev
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: tmpfile-dev
+  resources:
+    requests:
+      storage: 2Gi
+
+
+

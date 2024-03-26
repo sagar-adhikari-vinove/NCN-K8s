@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: curl-test-pod
+spec:
+  securityContext:       # Pod Security Context
+    runAsUser: 1000      # Arbitrary UID
+    fsGroup: 2000
+  containers:
+  - name: curl-container
+    image: curlimages/curl:latest
+    command: ["sleep", "infinity"]
+    securityContext:     # Container Security Context
+      allowPrivilegeEscalation: false
